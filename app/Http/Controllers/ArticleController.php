@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Article;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth; 
+use App\Exports\ArticlesExport;
+use Maatwebsite\Excel\Facades\Excel;
+
 
 class ArticleController extends Controller
 {
@@ -26,16 +29,29 @@ class ArticleController extends Controller
         $balance = $articles->whereIn('etat', ['en_cours', 'non_vendu'])->sum('prix_achat');
 
         // Calculs par mois pour les articles 'vendu'
-        $beneficeMensuelVendu = $articles->where('etat', 'vendu')->groupBy(function ($date) {
+        $beneficeMensuelVendu = $articlesVendus->groupBy(function ($date) {
             return \Carbon\Carbon::parse($date->date_vente)->format('m');
         })->map(function ($month) {
             return $month->sum('benefice');
         });
 
-        $chiffreAffaireMensuelVendu = $articles->where('etat', 'vendu')->groupBy(function ($date) {
+        $chiffreAffaireMensuelVendu = $articlesVendus->groupBy(function ($date) {
             return \Carbon\Carbon::parse($date->date_vente)->format('m');
         })->map(function ($month) {
             return $month->sum('prix_vente');
+        });
+
+        // Calculs annuels pour les articles 'vendu'
+        $beneficeAnnuelVendu = $articlesVendus->groupBy(function ($date) {
+            return \Carbon\Carbon::parse($date->date_vente)->format('Y');
+        })->map(function ($year) {
+            return $year->sum('benefice');
+        });
+
+        $chiffreAffaireAnnuelVendu = $articlesVendus->groupBy(function ($date) {
+            return \Carbon\Carbon::parse($date->date_vente)->format('Y');
+        })->map(function ($year) {
+            return $year->sum('prix_vente');
         });
 
         return view('articles.index', [
@@ -48,6 +64,8 @@ class ArticleController extends Controller
             'balance' => $balance,
             'beneficeMensuelVendu' => $beneficeMensuelVendu,
             'chiffreAffaireMensuelVendu' => $chiffreAffaireMensuelVendu,
+            'beneficeAnnuelVendu' => $beneficeAnnuelVendu,
+            'chiffreAffaireAnnuelVendu' => $chiffreAffaireAnnuelVendu,
         ]);
     }
 
@@ -90,5 +108,10 @@ class ArticleController extends Controller
         $article->delete();
 
         return redirect()->route('articles.index')->with('success', 'Article supprimé avec succès!');
+    }
+
+    public function export()
+    {
+        return Excel::download(new ArticlesExport, 'articles.xlsx');
     }
 }

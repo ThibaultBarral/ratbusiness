@@ -77,7 +77,7 @@ export default function SalesPage() {
             ) : displayedSales.length === 0 ? (
                 <p className="text-muted-foreground">Aucune vente enregistrée pour le moment.</p>
             ) : (
-                <div className="grid gap-4">
+                <div className="grid gap-4 mt-4">
                     {displayedSales.map((sale) => {
                         const benefit = sale.sale_price - sale.articles.unit_cost;
                         return (
@@ -94,6 +94,16 @@ export default function SalesPage() {
                                 <p className={`text-sm font-medium ${benefit < 0 ? "text-red-600" : "text-green-600"}`}>
                                     Bénéfice : {benefit.toFixed(2)} €
                                 </p>
+                                <button
+                                    onClick={async () => {
+                                        const { error } = await supabase.from("sales").delete().eq("id", sale.id);
+                                        if (!error) setSales((prev) => prev.filter((s) => s.id !== sale.id));
+                                        else alert("Erreur lors de la suppression : " + error.message);
+                                    }}
+                                    className="mt-2 text-sm text-red-600 underline"
+                                >
+                                    Supprimer
+                                </button>
                             </div>
                         );
                     })}

@@ -1,7 +1,7 @@
 "use client";
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { createClient } from "../../../../utils/supabase/client";
@@ -24,11 +24,30 @@ export default function DashboardPage() {
     const [totalRevenue, setTotalRevenue] = useState(0);
     const [totalProfit, setTotalProfit] = useState(0);
     const [totalStock, setTotalStock] = useState(0);
-    const [listedItems, setListedItems] = useState(0);
     const [averageMargin, setAverageMargin] = useState(0);
     const [topProfitableArticles, setTopProfitableArticles] = useState<ArticleProfit[]>([]);
     const [criticalStockArticles, setCriticalStockArticles] = useState<StockAlert[]>([]);
     const supabase = createClient();
+
+    const [showReport, setShowReport] = useState(() => {
+        if (typeof window !== "undefined") {
+            const saved = localStorage.getItem("showReport");
+            return saved !== null ? JSON.parse(saved) : true;
+        }
+        return true;
+    });
+
+    const [monthlyReport, setMonthlyReport] = useState<{
+        bestDay: string;
+        topProduct: string;
+        growthRate: string;
+    } | null>(null);
+
+    useEffect(() => {
+        if (typeof window !== "undefined") {
+            localStorage.setItem("showReport", JSON.stringify(showReport));
+        }
+    }, [showReport]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -44,7 +63,7 @@ export default function DashboardPage() {
 
             const { data: sales, error: salesError } = await supabase
                 .from("sales")
-                .select("article_id, sale_price");
+                .select("article_id, sale_price, sale_date");
 
             if (articlesError) console.error("[ERROR] Articles fetch:", articlesError);
             if (salesError) console.error("[ERROR] Sales fetch:", salesError);
@@ -114,6 +133,48 @@ export default function DashboardPage() {
             setAverageMargin(averageMarginPercent);
             setTopProfitableArticles(top5);
             setCriticalStockArticles(criticalStock);
+
+            // Rapport mensuel
+            const thisMonth = new Date().getMonth();
+            const lastMonth = (thisMonth - 1 + 12) % 12;
+
+            const salesByMonth = sales.reduce((acc, sale) => {
+                const month = new Date(sale.sale_date).getMonth();
+                acc[month] = (acc[month] || 0) + sale.sale_price;
+                return acc;
+            }, {} as Record<number, number>);
+
+            const currentMonthCA = salesByMonth[thisMonth] || 0;
+            const previousMonthCA = salesByMonth[lastMonth] || 1;
+            const growthRate = (((currentMonthCA - previousMonthCA) / previousMonthCA) * 100).toFixed(1);
+
+            // Jour le plus actif
+            const daysMap = sales.reduce((acc, sale) => {
+                const day = new Date(sale.sale_date).toLocaleDateString("fr-FR", { weekday: "long" });
+                acc[day] = (acc[day] || 0) + 1;
+                return acc;
+            }, {} as Record<string, number>);
+
+            const bestDay = Object.entries(daysMap).sort((a, b) => b[1] - a[1])[0]?.[0] || "-";
+
+            // Article le plus rentable
+            const profitMap = new Map<string, { name: string; totalProfit: number }>();
+            for (const sale of sales) {
+                const article = articles.find((a) => a.id === sale.article_id);
+                if (!article) continue;
+                const profit = sale.sale_price - article.unit_cost;
+                if (!profitMap.has(article.name)) {
+                    profitMap.set(article.name, { name: article.name, totalProfit: 0 });
+                }
+                profitMap.get(article.name)!.totalProfit += profit;
+            }
+            const topProduct = Array.from(profitMap.values()).sort((a, b) => b.totalProfit - a.totalProfit)[0]?.name || "-";
+
+            setMonthlyReport({
+                bestDay,
+                topProduct,
+                growthRate,
+            });
         };
 
         fetchData();
@@ -128,7 +189,49 @@ export default function DashboardPage() {
                 </Link>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            {monthlyReport && (
+                <Card className="mb-6 col-span-full relative">
+                    <CardHeader>
+                        <CardTitle>📊 Rapport mensuel</CardTitle>
+                        <CardDescription className="text-sm text-muted-foreground">
+                            Un résumé de vos performances pour ce mois
+                        </CardDescription>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setShowReport((prev) => !prev)}
+                            className="text-xs absolute top-4 right-4"
+                        >
+                            {showReport ? "Masquer" : "Afficher"}
+                        </Button>
+                    </CardHeader>
+
+                    {showReport && (
+                        <CardContent className="text-sm text-muted-foreground space-y-2">
+                            <p>
+                                📅 Jour le plus actif :{" "}
+                                <span className="text-foreground font-medium">
+                                    {monthlyReport.bestDay}
+                                </span>
+                            </p>
+                            <p>
+                                💰 Article le plus rentable :{" "}
+                                <span className="text-foreground font-medium">
+                                    {monthlyReport.topProduct}
+                                </span>
+                            </p>
+                            <p>
+                                📈 Progression CA vs mois dernier :{" "}
+                                <span className="text-foreground font-medium">
+                                    {monthlyReport.growthRate}%
+                                </span>
+                            </p>
+                        </CardContent>
+                    )}
+                </Card>
+            )}
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <Card>
                     <CardHeader>
                         <CardTitle>Chiffre d&apos;affaires</CardTitle>
@@ -153,15 +256,6 @@ export default function DashboardPage() {
                     </CardHeader>
                     <CardContent>
                         <p className="text-2xl font-bold">{totalStock}</p>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Articles en vente</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-2xl font-bold">{listedItems}</p>
                     </CardContent>
                 </Card>
 

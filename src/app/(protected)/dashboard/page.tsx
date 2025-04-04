@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { createClient } from "../../../../utils/supabase/client";
 import { SalesChart } from "@/components/charts/SalesChart";
 import Link from "next/link";
+import { GoalWidget } from "@/components/dashboard/GoalWidget";
 
 interface ArticleProfit {
     id: string;
@@ -230,6 +231,8 @@ export default function DashboardPage() {
                     )}
                 </Card>
             )}
+
+            <GoalWidget />
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <Card>

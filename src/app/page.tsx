@@ -74,7 +74,7 @@ export default function HomePage() {
           </div>
           <div>
             <h3 className="text-xl font-semibold mb-2 text-white">📊 Statistiques dynamiques</h3>
-            <p>Visualisez votre chiffre d'affaires, votre marge moyenne et vos stocks restants.</p>
+            <p>Visualisez votre chiffre d&apos;affaires, votre marge moyenne et vos stocks restants.</p>
           </div>
           <div>
             <h3 className="text-xl font-semibold mb-2 text-white">🔒 Sécurité & confidentialité</h3>

@@ -70,7 +70,7 @@ export default function DashboardPage() {
             if (salesError) console.error("[ERROR] Sales fetch:", salesError);
             if (!articles || !sales) return;
 
-            const salesByArticle = sales.reduce((acc, sale) => {
+            const salesByArticle = sales.reduce((acc: Record<string, typeof sales>, sale) => {
                 if (!acc[sale.article_id]) acc[sale.article_id] = [];
                 acc[sale.article_id].push(sale);
                 return acc;
@@ -200,7 +200,7 @@ export default function DashboardPage() {
                         <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => setShowReport((prev) => !prev)}
+                            onClick={() => setShowReport((prev: boolean) => !prev)}
                             className="text-xs absolute top-4 right-4"
                         >
                             {showReport ? "Masquer" : "Afficher"}

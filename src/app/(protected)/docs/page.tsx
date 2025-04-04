@@ -49,7 +49,7 @@ export default function DocsPage() {
                                 <h1 className="text-3xl font-bold text-foreground">{children}</h1>
                             ),
                             h2: ({ children }) => {
-                                const text = children.toString();
+                                const text = children?.toString() ?? '';
                                 const id = text.toLowerCase().replace(/\s+/g, '-');
                                 return (
                                     <h2 id={id} className="text-2xl font-semibold mt-8 text-foreground mb-4">

@@ -54,7 +54,10 @@ export default function SalesPage() {
                 console.error("Erreur récupération ventes :", error.message);
             } else {
                 console.log("Données des ventes:", data);
-                setSales(data || []);
+                setSales(data?.map(sale => ({
+                    ...sale,
+                    articles: sale.articles?.[0] || { name: '', unit_cost: 0 }
+                })) || []);
             }
             setLoading(false);
         };

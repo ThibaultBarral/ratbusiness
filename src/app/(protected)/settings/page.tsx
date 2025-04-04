@@ -66,7 +66,7 @@ export default function SettingsPage() {
                             </div>
                             <div>
                                 <label htmlFor="username" className="block text-sm font-medium">
-                                    Nom d'utilisateur
+                                    Nom d&apos;utilisateur
                                 </label>
                                 <Input
                                     id="username"

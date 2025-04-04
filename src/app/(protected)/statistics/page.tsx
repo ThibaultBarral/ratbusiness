@@ -10,7 +10,6 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useEffect, useState } from "react";
 import { createClient } from "../../../../utils/supabase/client";
-import { format } from "date-fns";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 
 export default function StatisticsPage() {
@@ -49,7 +48,7 @@ export default function StatisticsPage() {
 
             for (const sale of sales) {
                 const price = sale.sale_price ?? 0;
-                const cost = sale.article?.unit_cost ?? 0;
+                const cost = sale.article?.[0]?.unit_cost ?? 0;
                 revenue += price;
                 profit += price - cost;
             }
@@ -81,8 +80,8 @@ export default function StatisticsPage() {
 
             for (const sale of sales) {
                 const articleId = sale.article_id;
-                const name = sale.article?.name ?? "Inconnu";
-                const unitCost = sale.article?.unit_cost ?? 0;
+                const name = sale.article?.[0]?.name ?? "Inconnu";
+                const unitCost = sale.article?.[0]?.unit_cost ?? 0;
                 const profit = sale.sale_price - unitCost;
 
                 if (!profitMap.has(articleId)) {
@@ -164,7 +163,7 @@ export default function StatisticsPage() {
 
         for (const sale of sales) {
             const price = sale.sale_price ?? 0;
-            const cost = sale.article?.unit_cost ?? 0;
+            const cost = sale.article?.[0]?.unit_cost ?? 0;
             revenue += price;
             profit += price - cost;
         }
@@ -173,7 +172,7 @@ export default function StatisticsPage() {
     };
 
     return (
-        <DashboardLayout className="p-6">
+        <DashboardLayout>
             <Tabs defaultValue="overview" className="w-full space-y-6">
                 <TabsList className="grid w-full grid-cols-4">
                     <TabsTrigger value="overview">Vue globale</TabsTrigger>
@@ -191,7 +190,7 @@ export default function StatisticsPage() {
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                 <Card className="shadow-sm">
                                     <CardHeader>
-                                        <CardTitle>Chiffre d'affaires</CardTitle>
+                                        <CardTitle>Chiffre d&apos;affaires</CardTitle>
                                     </CardHeader>
                                     <CardContent>
                                         <p className="text-2xl font-bold">
@@ -266,7 +265,7 @@ export default function StatisticsPage() {
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
                                     <Card>
                                         <CardHeader>
-                                            <CardTitle>Chiffre d'affaires</CardTitle>
+                                            <CardTitle>Chiffre d&apos;affaires</CardTitle>
                                         </CardHeader>
                                         <CardContent>
                                             <p className="text-2xl font-bold">

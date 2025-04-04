@@ -47,7 +47,7 @@ export function GoalWidget() {
                 const currentMonth = new Date().getMonth();
                 const filteredSales = sales.filter(s => new Date(s.sale_date).getMonth() === currentMonth);
                 const total = filteredSales.reduce((sum, s) => {
-                    const unitCost = s.article?.unit_cost || 0;
+                    const unitCost = s.article?.[0]?.unit_cost || 0;
                     return sum + (goalType === "profit" ? s.sale_price - unitCost : s.sale_price);
                 }, 0);
                 setCurrentValue(total);
@@ -102,14 +102,14 @@ export function GoalWidget() {
             {showGoal && (
                 <CardContent className="space-y-4">
                     <div className="flex items-center gap-2">
-                        <label htmlFor="goalType" className="text-sm">Type d'objectif :</label>
+                        <label htmlFor="goalType" className="text-sm">Type d&apos;objectif :</label>
                         <select
                             id="goalType"
                             value={goalType}
                             onChange={(e) => setGoalType(e.target.value as "revenue" | "profit")}
                             className="text-sm px-2 py-1 rounded border text-black"
                         >
-                            <option value="revenue">Chiffre d'affaires</option>
+                            <option value="revenue">Chiffre d&apos;affaires</option>
                             <option value="profit">Bénéfice</option>
                         </select>
                     </div>
@@ -146,7 +146,7 @@ export function GoalWidget() {
                                 onChange={(e) => setNewGoal(e.target.value)}
                                 className="w-full"
                             />
-                            <Button onClick={handleSetGoal}>Définir l'objectif</Button>
+                            <Button onClick={handleSetGoal}>Définir l&apos;objectif</Button>
                         </div>
                     )}
                 </CardContent>

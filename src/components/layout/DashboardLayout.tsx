@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation";
 import {
     Layout,
     LayoutHeader,
-    LayoutTitle,
     LayoutContent,
     LayoutSidebar,
     LayoutFooter,

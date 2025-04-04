@@ -72,7 +72,7 @@ export function SalesChart() {
                 const date = new Date(sale.sale_date);
                 const month = format(date, "MMMM");
                 const revenue = sale.sale_price || 0;
-                const cost = sale.article?.unit_cost || 0;
+                const cost = sale.article?.[0]?.unit_cost || 0;
                 const profit = revenue - cost;
 
                 if (!monthlyMap.has(month)) {
@@ -103,7 +103,7 @@ export function SalesChart() {
             <CardHeader>
                 <CardTitle>Statistiques de ventes</CardTitle>
                 <CardDescription>
-                    Visualisation du chiffre d'affaires et bénéfices
+                    Visualisation du chiffre d&apos;affaires et bénéfices
                 </CardDescription>
             </CardHeader>
             <CardContent>

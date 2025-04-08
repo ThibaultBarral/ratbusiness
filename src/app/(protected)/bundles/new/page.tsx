@@ -49,7 +49,7 @@ export default function NewBundlePage() {
 
     const handleSubmit = async () => {
         const selectedArticles = Object.entries(selectedItems)
-            .filter(([_, quantity]) => quantity > 0)
+            .filter(([, quantity]) => quantity > 0)
             .map(([articleId, quantity]) => ({ articleId, quantity }));
 
         if (!saleDate || !totalPrice || selectedArticles.length === 0) return;

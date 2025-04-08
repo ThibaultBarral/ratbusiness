@@ -71,7 +71,8 @@ export default function StatisticsPage() {
 
             for (const sale of sales) {
                 const price = sale.sale_price ?? 0;
-                const cost = sale.article?.unit_cost ?? 0;
+                const articleData = sale.article as { unit_cost?: number } | null;
+                const cost = articleData?.unit_cost ?? 0;
                 revenue += price;
                 profit += price - cost;
             }
@@ -126,8 +127,9 @@ export default function StatisticsPage() {
 
             for (const sale of sales) {
                 const articleId = sale.article_id;
-                const name = sale.article?.[0]?.name ?? "Inconnu";
-                const unitCost = sale.article?.[0]?.unit_cost ?? 0;
+                const articleData = sale.article as { name?: string; unit_cost?: number } | null;
+                const name = articleData?.name ?? "Inconnu";
+                const unitCost = articleData?.unit_cost ?? 0;
                 const profit = sale.sale_price - unitCost;
 
                 if (!profitMap.has(articleId)) {
@@ -209,7 +211,8 @@ export default function StatisticsPage() {
 
         for (const sale of sales) {
             const price = sale.sale_price ?? 0;
-            const cost = sale.article?.[0]?.unit_cost ?? 0;
+            const articleData = sale.article as { unit_cost?: number } | null;
+            const cost = articleData?.unit_cost ?? 0;
             revenue += price;
             profit += price - cost;
         }

@@ -15,7 +15,15 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 export default function StatisticsPage() {
     const supabase = createClient();
 
-    const [overview, setOverview] = useState<{ revenue: number; profit: number } | null>(null);
+    const [overview, setOverview] = useState<{
+        revenue: number;
+        profit: number;
+        investedAmount: number;
+        totalSales: number;
+        totalSoldUnits: number;
+        totalRemainingUnits: number;
+        totalArticles: number;
+    } | null>(null);
     const [ranking, setRanking] = useState<
         { id: string; name: string; totalProfit: number; salesCount: number }[]
     >([]);
@@ -43,17 +51,56 @@ export default function StatisticsPage() {
 
             if (!sales) return;
 
+            const { data: articles } = await supabase
+                .from("articles")
+                .select("id, unit_cost, quantity")
+                .eq("user_id", user.id);
+
+            const { data: allSales } = await supabase
+                .from("sales")
+                .select("article_id");
+
+            const salesMap = allSales?.reduce((acc, sale) => {
+                acc[sale.article_id] = (acc[sale.article_id] || 0) + 1;
+                return acc;
+            }, {} as Record<string, number>) ?? {};
+
             let revenue = 0;
             let profit = 0;
+            let investedAmount = 0;
 
             for (const sale of sales) {
                 const price = sale.sale_price ?? 0;
-                const cost = sale.article?.[0]?.unit_cost ?? 0;
+                const articleData = sale.article as { unit_cost?: number } | null;
+                const cost = articleData?.unit_cost ?? 0;
                 revenue += price;
                 profit += price - cost;
             }
 
-            setOverview({ revenue, profit });
+            let totalSoldUnits = 0;
+            let totalRemainingUnits = 0;
+            let totalArticles = 0;
+            const totalSales = sales.length;
+
+            for (const article of articles || []) {
+                const soldQty = salesMap[article.id] || 0;
+                const remainingQty = article.quantity - soldQty;
+                investedAmount += remainingQty * article.unit_cost;
+                totalSoldUnits += soldQty;
+                totalRemainingUnits += remainingQty;
+                totalArticles += article.quantity;
+            }
+
+            setOverview({
+                revenue,
+                profit,
+                investedAmount,
+                totalSales,
+                totalSoldUnits,
+                totalRemainingUnits,
+                totalArticles,
+            });
+
         };
 
         fetchOverview();
@@ -80,8 +127,9 @@ export default function StatisticsPage() {
 
             for (const sale of sales) {
                 const articleId = sale.article_id;
-                const name = sale.article?.[0]?.name ?? "Inconnu";
-                const unitCost = sale.article?.[0]?.unit_cost ?? 0;
+                const articleData = sale.article as { name?: string; unit_cost?: number } | null;
+                const name = articleData?.name ?? "Inconnu";
+                const unitCost = articleData?.unit_cost ?? 0;
                 const profit = sale.sale_price - unitCost;
 
                 if (!profitMap.has(articleId)) {
@@ -163,7 +211,8 @@ export default function StatisticsPage() {
 
         for (const sale of sales) {
             const price = sale.sale_price ?? 0;
-            const cost = sale.article?.[0]?.unit_cost ?? 0;
+            const articleData = sale.article as { unit_cost?: number } | null;
+            const cost = articleData?.unit_cost ?? 0;
             revenue += price;
             profit += price - cost;
         }
@@ -187,44 +236,83 @@ export default function StatisticsPage() {
                             <CardTitle>Vue globale</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-6">
                                 <Card className="shadow-sm">
-                                    <CardHeader>
-                                        <CardTitle>Chiffre d&apos;affaires</CardTitle>
-                                    </CardHeader>
+                                    <CardHeader><CardTitle>Chiffre d&apos;affaires total</CardTitle></CardHeader>
+                                    <CardContent>
+                                        <p className="text-2xl font-bold">{overview?.revenue.toFixed(2) ?? "0.00"} €</p>
+                                    </CardContent>
+                                </Card>
+
+                                <Card className="shadow-sm">
+                                    <CardHeader><CardTitle>Bénéfice net</CardTitle></CardHeader>
+                                    <CardContent>
+                                        <p className="text-2xl font-bold">{overview?.profit.toFixed(2) ?? "0.00"} €</p>
+                                    </CardContent>
+                                </Card>
+
+                                <Card className="shadow-sm">
+                                    <CardHeader><CardTitle>Investissement restant</CardTitle></CardHeader>
+                                    <CardContent>
+                                        <p className="text-2xl font-bold">{overview?.investedAmount.toFixed(2) ?? "0.00"} €</p>
+                                    </CardContent>
+                                </Card>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
+                                <Card className="shadow-sm">
+                                    <CardHeader><CardTitle>Articles achetés</CardTitle></CardHeader>
+                                    <CardContent>
+                                        <p className="text-2xl font-bold">{overview?.totalArticles ?? 0}</p>
+                                    </CardContent>
+                                </Card>
+
+                                <Card className="shadow-sm">
+                                    <CardHeader><CardTitle>Articles restants</CardTitle></CardHeader>
+                                    <CardContent>
+                                        <p className="text-2xl font-bold">{overview?.totalRemainingUnits ?? 0}</p>
+                                    </CardContent>
+                                </Card>
+
+                                <Card className="shadow-sm">
+                                    <CardHeader><CardTitle>Articles vendus</CardTitle></CardHeader>
+                                    <CardContent>
+                                        <p className="text-2xl font-bold">{overview?.totalSoldUnits ?? 0}</p>
+                                    </CardContent>
+                                </Card>
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
+                                <Card className="shadow-sm">
+                                    <CardHeader><CardTitle>Nombre de ventes réalisées</CardTitle></CardHeader>
+                                    <CardContent>
+                                        <p className="text-2xl font-bold">{overview?.totalSales ?? 0}</p>
+                                    </CardContent>
+                                </Card>
+
+                                <Card className="shadow-sm">
+                                    <CardHeader><CardTitle>Bénéfice moyen / vente</CardTitle></CardHeader>
                                     <CardContent>
                                         <p className="text-2xl font-bold">
-                                            {overview ? `${overview.revenue.toFixed(2)} €` : "0.00 €"}
+                                            {overview && overview.totalSales > 0
+                                                ? `${(overview.profit / overview.totalSales).toFixed(2)} €`
+                                                : "0.00 €"}
                                         </p>
                                     </CardContent>
                                 </Card>
 
                                 <Card className="shadow-sm">
-                                    <CardHeader>
-                                        <CardTitle>Bénéfice total</CardTitle>
-                                    </CardHeader>
+                                    <CardHeader><CardTitle>Marge estimée sur stock restant</CardTitle></CardHeader>
                                     <CardContent>
                                         <p className="text-2xl font-bold">
-                                            {overview ? `${overview.profit.toFixed(2)} €` : "0.00 €"}
-                                        </p>
-                                    </CardContent>
-                                </Card>
-
-                                <Card className="shadow-sm">
-                                    <CardHeader>
-                                        <CardTitle>Marge moyenne</CardTitle>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <p className="text-2xl font-bold">
-                                            {overview && overview.revenue > 0
-                                                ? `${((overview.profit / overview.revenue) * 100).toFixed(1)} %`
+                                            {overview && overview.totalRemainingUnits > 0
+                                                ? `${(((overview.revenue / overview.totalSoldUnits) * overview.totalRemainingUnits - overview.investedAmount) / overview.investedAmount * 100).toFixed(1)} %`
                                                 : "0.0 %"}
                                         </p>
                                     </CardContent>
                                 </Card>
                             </div>
-                        </CardContent>
-                    </Card>
+                        </CardContent>                    </Card>
                 </TabsContent>
 
                 <TabsContent value="period">

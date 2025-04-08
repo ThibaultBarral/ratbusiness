@@ -2,7 +2,7 @@
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { useEffect, useState } from "react";
-import { createClient } from "../../../utils/supabase/client";
+import { createClient } from "../../../../utils/supabase/client";
 import { format, subDays, startOfMonth, endOfMonth, isAfter, isBefore } from "date-fns";
 import { Button } from "@/components/ui/button";
 
@@ -47,17 +47,14 @@ export default function SalesPage() {
         const fetchSales = async () => {
             const { data, error } = await supabase
                 .from("sales")
-                .select("id, sale_price, sale_date, status, articles (name, unit_cost)")
+                .select("id, sale_price, sale_date, status, articles!sales_article_id_fkey(name, unit_cost)")
                 .order("sale_date", { ascending: false });
 
             if (error) {
                 console.error("Erreur récupération ventes :", error.message);
             } else {
                 console.log("Données des ventes:", data);
-                setSales(data?.map(sale => ({
-                    ...sale,
-                    articles: sale.articles?.[0] || { name: '', unit_cost: 0 }
-                })) || []);
+                setSales(data || []);
             }
             setLoading(false);
         };

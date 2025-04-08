@@ -27,9 +27,13 @@ export default function StatisticsPage() {
     const [ranking, setRanking] = useState<
         { id: string; name: string; totalProfit: number; salesCount: number }[]
     >([]);
+    const [fastestSelling, setFastestSelling] = useState<
+        { id: string; name: string; avgDays: number; salesCount: number }[]
+    >([]);
     const [lowStockArticles, setLowStockArticles] = useState<
         { id: string; name: string; remaining: number }[]
     >([]);
+    const [averageSaleTime, setAverageSaleTime] = useState<number | null>(null);
 
     const [filteredStats, setFilteredStats] = useState<{ revenue: number; profit: number } | null>(null);
     const [dateRange, setDateRange] = useState({
@@ -91,6 +95,27 @@ export default function StatisticsPage() {
                 totalArticles += article.quantity;
             }
 
+            let totalDaysOnSale = 0;
+            let countedSales = 0;
+
+            const { data: salesWithDates } = await supabase
+                .from("sales")
+                .select("sale_date, article:article_id(purchase_date)")
+                .eq("article.user_id", user.id);
+
+            for (const sale of salesWithDates || []) {
+                const articleData = sale.article as { purchase_date?: string | null };
+                const purchaseDate = new Date(articleData?.purchase_date ?? "");
+                const saleDate = new Date(sale.sale_date);
+                if (!isNaN(purchaseDate.getTime()) && !isNaN(saleDate.getTime())) {
+                    const daysDiff = Math.floor((saleDate.getTime() - purchaseDate.getTime()) / (1000 * 60 * 60 * 24));
+                    totalDaysOnSale += daysDiff;
+                    countedSales++;
+                }
+            }
+
+            const avgSaleTime = countedSales > 0 ? Math.round(totalDaysOnSale / countedSales) : 0;
+
             setOverview({
                 revenue,
                 profit,
@@ -100,6 +125,49 @@ export default function StatisticsPage() {
                 totalRemainingUnits,
                 totalArticles,
             });
+
+            setAverageSaleTime(avgSaleTime);
+
+            const { data: salesWithAllDates } = await supabase
+                .from("sales")
+                .select("article_id, sale_date, article:article_id(name, purchase_date)")
+                .eq("article.user_id", user.id);
+
+            const articleSalesMap = new Map<
+                string,
+                { name: string; totalDays: number; count: number }
+            >();
+
+            for (const sale of salesWithAllDates || []) {
+                const articleData = sale.article as { name?: string; purchase_date?: string | null };
+                const articleId = sale.article_id;
+                const purchaseDate = new Date(articleData.purchase_date ?? "");
+                const saleDate = new Date(sale.sale_date);
+                if (!articleId || isNaN(purchaseDate.getTime()) || isNaN(saleDate.getTime())) continue;
+
+                const name = articleData.name ?? "Inconnu";
+                const diff = Math.floor((saleDate.getTime() - purchaseDate.getTime()) / (1000 * 60 * 60 * 24));
+
+                if (!articleSalesMap.has(articleId)) {
+                    articleSalesMap.set(articleId, { name, totalDays: 0, count: 0 });
+                }
+
+                const entry = articleSalesMap.get(articleId)!;
+                entry.totalDays += diff;
+                entry.count += 1;
+            }
+
+            const rankedFastest = Array.from(articleSalesMap.entries())
+                .map(([id, entry]) => ({
+                    id,
+                    name: entry.name,
+                    avgDays: Math.round(entry.totalDays / entry.count),
+                    salesCount: entry.count,
+                }))
+                .sort((a, b) => a.avgDays - b.avgDays)
+                .slice(0, 5);
+
+            setFastestSelling(rankedFastest);
 
         };
 
@@ -311,8 +379,17 @@ export default function StatisticsPage() {
                                         </p>
                                     </CardContent>
                                 </Card>
+                                <Card className="shadow-sm">
+                                    <CardHeader><CardTitle>⏱️ Temps moyen avant vente</CardTitle></CardHeader>
+                                    <CardContent>
+                                        <p className="text-2xl font-bold">
+                                            {averageSaleTime !== null ? `${averageSaleTime} jours` : "0 jour"}
+                                        </p>
+                                    </CardContent>
+                                </Card>
                             </div>
-                        </CardContent>                    </Card>
+                        </CardContent>
+                    </Card>
                 </TabsContent>
 
                 <TabsContent value="period">
@@ -401,6 +478,35 @@ export default function StatisticsPage() {
                                                 <td className="p-2 border-b">
                                                     {item.totalProfit.toFixed(2)}
                                                 </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            ) : (
+                                <p className="text-muted-foreground mt-2">Aucune donnée disponible.</p>
+                            )}
+                        </CardContent>
+                    </Card>
+                    <Card className="mt-10">
+                        <CardHeader>
+                            <CardTitle>Top 5 des articles les plus rapides à vendre</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            {fastestSelling.length > 0 ? (
+                                <table className="w-full text-sm mt-4 border border-gray-200">
+                                    <thead>
+                                        <tr className="bg-gray-100">
+                                            <th className="text-left p-2 border-b">Article</th>
+                                            <th className="text-left p-2 border-b">Ventes</th>
+                                            <th className="text-left p-2 border-b">Temps moyen (jours)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {fastestSelling.map((item) => (
+                                            <tr key={item.id}>
+                                                <td className="p-2 border-b">{item.name}</td>
+                                                <td className="p-2 border-b">{item.salesCount}</td>
+                                                <td className="p-2 border-b">{item.avgDays}</td>
                                             </tr>
                                         ))}
                                     </tbody>

@@ -111,6 +111,28 @@ export default function SalesPage() {
                                 <p className={`text-sm font-medium ${benefit < 0 ? "text-red-600" : "text-green-600"}`}>
                                     Bénéfice : {benefit.toFixed(2)} €
                                 </p>
+                                {sale.status === "returned" && (
+                                    <p className="text-sm text-orange-600 mt-2 font-medium">Vente retournée</p>
+                                )}
+                                {sale.status !== "returned" && (
+                                    <button
+                                        onClick={async () => {
+                                            const { error } = await supabase.from("sales").update({ is_returned: true }).eq("id", sale.id);
+                                            if (!error) {
+                                                setSales((prev) =>
+                                                    prev.map((s) =>
+                                                        s.id === sale.id ? { ...s, status: "returned" } : s
+                                                    )
+                                                );
+                                            } else {
+                                                alert("Erreur lors de la mise à jour : " + error.message);
+                                            }
+                                        }}
+                                        className="mt-2 text-sm text-blue-600 underline mr-4"
+                                    >
+                                        Marquer comme retour
+                                    </button>
+                                )}
                                 <button
                                     onClick={async () => {
                                         const { error } = await supabase.from("sales").delete().eq("id", sale.id);

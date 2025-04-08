@@ -157,6 +157,12 @@ export default function ArticlesPage() {
                                     <Button className="mt-4" onClick={() => openDialog(article.id)}>
                                         Ajouter une vente
                                     </Button>
+                                    {' '}
+                                    <Link href={`/articles/${article.id}/edit`}>
+                                        <Button variant="secondary" className="mt-2">
+                                            Modifier
+                                        </Button>
+                                    </Link>
                                 </div>
                             </div>
                         );

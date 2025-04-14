@@ -162,7 +162,7 @@ export default function ArticlesPage() {
             <Tabs value={tabValue} onValueChange={setTabValue} className="w-full mt-6">
                 <TabsList className="mb-4">
                     <TabsTrigger value="actifs">Actifs</TabsTrigger>
-                    <TabsTrigger value="archives">Archivés</TabsTrigger>
+                    <TabsTrigger value="archives">Vendus</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="actifs">
@@ -187,9 +187,6 @@ export default function ArticlesPage() {
                                         <ArticleImage url={article.image_url} />
                                         <div className="flex-1">
                                             <h3 className="text-lg font-semibold">{article.name}</h3>
-                                            <p className="text-sm text-muted-foreground">
-                                                {article.brand} – {article.quantity} unité(s) – {article.platform}
-                                            </p>
                                             <p className="text-sm mt-1">Coût unitaire : {article.unit_cost.toFixed(2)} €</p>
                                             <p className="text-sm mt-1 font-medium">
                                                 Stock restant : {remaining} / {article.quantity}
@@ -200,10 +197,10 @@ export default function ArticlesPage() {
                                                 </p>
                                             )}
                                             <p className="text-sm mt-1 text-green-700">
-                                                💰 Prix conseillé (x3) : {suggestedPrice} €
+                                                💰 Prix conseillé (x3) : {suggestedPrice} € (={(parseFloat(suggestedPrice) * article.quantity).toFixed(2)} €)
                                             </p>
                                             <p className="text-sm mt-1 text-orange-600">
-                                                💡 Prix minimum (x1.5) : {(article.unit_cost * 1.5).toFixed(2)} €
+                                                💡 Prix minimum (x1.5) : {(article.unit_cost * 1.5).toFixed(2)} € (={((article.unit_cost * 1.5) * article.quantity).toFixed(2)} €)
                                             </p>
                                             <Button className="mt-4" onClick={() => openDialog(article.id)}>
                                                 Ajouter une vente

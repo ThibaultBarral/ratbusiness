@@ -267,7 +267,7 @@ export default function DashboardPage() {
                         <CardTitle>Marge moyenne</CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-2xl font-bold">{averageMargin.toFixed(1)}%</p>
+                        <p className="text-2xl font-bold">{(1 + averageMargin / 100).toFixed(1)}x</p>
                     </CardContent>
                 </Card>
             </div>

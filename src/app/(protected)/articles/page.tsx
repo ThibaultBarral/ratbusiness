@@ -23,7 +23,7 @@ interface Article {
     quantity: number;
     unit_cost: number;
     platform: string;
-    sales: { id: string }[];
+    sales: { id: string; sale_date: string }[];
     image_url?: string;
     purchase_date?: string;
 }
@@ -36,7 +36,6 @@ function ArticleImage({ url }: { url?: string }) {
         const getSignedUrl = async () => {
             if (!url) return;
 
-            // Si `url` est une URL complète signée, on essaie d'en extraire le chemin interne
             const match = url.match(/article-images\/(.+?)\?/);
             const path = match?.[1];
 
@@ -75,20 +74,30 @@ export default function ArticlesPage() {
     const fetchArticles = async () => {
         const { data, error } = await supabase
             .from("articles")
-            .select("id, name, brand, quantity, unit_cost, platform, image_url, purchase_date, sales(id)");
+            .select("id, name, brand, quantity, unit_cost, platform, image_url, purchase_date, sales(id, sale_date)");
 
         if (error) {
             console.error("Erreur récupération articles :", error.message);
         } else {
-            const activeArticles = (data || []).filter(article => {
-                const soldQty = article.sales?.length || 0;
-                return article.quantity - soldQty > 0;
-            });
+            const activeArticles = (data || [])
+                .filter(article => {
+                    const soldQty = article.sales?.length || 0;
+                    return article.quantity - soldQty > 0;
+                })
+                .sort((a, b) => {
+                    if (!a.purchase_date || !b.purchase_date) return 0;
+                    return new Date(b.purchase_date).getTime() - new Date(a.purchase_date).getTime();
+                });
 
-            const archivedArticles = (data || []).filter(article => {
-                const soldQty = article.sales?.length || 0;
-                return article.quantity - soldQty === 0;
-            });
+            const archivedArticles = (data || [])
+                .filter(article => {
+                    const soldQty = article.sales?.length || 0;
+                    return article.quantity - soldQty === 0;
+                })
+                .sort((a, b) => {
+                    if (!a.purchase_date || !b.purchase_date) return 0;
+                    return new Date(b.purchase_date).getTime() - new Date(a.purchase_date).getTime();
+                });
 
             setArticles(activeArticles);
             setArchivedArticles(archivedArticles);
@@ -175,9 +184,47 @@ export default function ArticlesPage() {
                     ) : (
                         <div className="grid gap-4">
                             {articles.map((article) => {
-                                const soldQty = article.sales?.length || 0;
-                                const remaining = article.quantity - soldQty;
-                                const suggestedPrice = (article.unit_cost * 3).toFixed(2);
+                                const totalSales = article.sales?.length || 0;
+                                const remaining = article.quantity - totalSales;
+
+                                const firstSaleDate = article.sales?.[0]?.sale_date;
+                                const daysToFirstSale = firstSaleDate && article.purchase_date
+                                    ? differenceInDays(parseISO(firstSaleDate), parseISO(article.purchase_date))
+                                    : null;
+                                const daysSincePurchase = article.purchase_date
+                                    ? differenceInDays(new Date(), parseISO(article.purchase_date))
+                                    : null;
+
+                                let speedScore = 0;
+                                if (daysToFirstSale !== null) {
+                                    if (daysToFirstSale <= 7) speedScore = 100;
+                                    else if (daysToFirstSale <= 30) speedScore = 80;
+                                    else if (daysToFirstSale <= 90) speedScore = 60;
+                                    else if (daysToFirstSale <= 180) speedScore = 40;
+                                    else speedScore = 20;
+                                }
+                                // Pénalité si aucun article n'a été vendu depuis longtemps
+                                if (totalSales === 0 && daysSincePurchase !== null) {
+                                    if (daysSincePurchase > 180) speedScore -= 40;
+                                    else if (daysSincePurchase > 90) speedScore -= 20;
+                                    else if (daysSincePurchase > 30) speedScore -= 10;
+                                    speedScore = Math.max(0, speedScore);
+                                }
+
+                                const sellThroughRate = article.quantity > 0
+                                    ? (totalSales / article.quantity) * 100
+                                    : 0;
+                                const margin = (article.unit_cost > 0)
+                                    ? ((article.unit_cost * 3 - article.unit_cost) / article.unit_cost) * 100
+                                    : 0;
+
+                                // Score basé sur marge (40%), vitesse de vente (30%), taux de vente (30%)
+                                const score = Math.round((margin * 0.4) + (speedScore * 0.3) + (sellThroughRate * 0.3));
+
+                                let scoreColor = "text-gray-600";
+                                if (score >= 80) scoreColor = "text-green-600";
+                                else if (score >= 50) scoreColor = "text-yellow-600";
+                                else scoreColor = "text-red-600";
 
                                 return (
                                     <div
@@ -187,9 +234,6 @@ export default function ArticlesPage() {
                                         <ArticleImage url={article.image_url} />
                                         <div className="flex-1">
                                             <h3 className="text-lg font-semibold">{article.name}</h3>
-                                            <p className="text-sm text-muted-foreground">
-                                                {article.brand} – {article.quantity} unité(s) – {article.platform}
-                                            </p>
                                             <p className="text-sm mt-1">Coût unitaire : {article.unit_cost.toFixed(2)} €</p>
                                             <p className="text-sm mt-1 font-medium">
                                                 Stock restant : {remaining} / {article.quantity}
@@ -200,19 +244,31 @@ export default function ArticlesPage() {
                                                 </p>
                                             )}
                                             <p className="text-sm mt-1 text-green-700">
-                                                💰 Prix conseillé (x3) : {suggestedPrice} €
+                                                💰 Prix conseillé (x3) : {((article.unit_cost * 3).toFixed(2))} € (={(parseFloat((article.unit_cost * 3).toFixed(2)) * article.quantity).toFixed(2)} €)
                                             </p>
                                             <p className="text-sm mt-1 text-orange-600">
-                                                💡 Prix minimum (x1.5) : {(article.unit_cost * 1.5).toFixed(2)} €
+                                                💡 Prix minimum (x1.5) : {(article.unit_cost * 1.5).toFixed(2)} € (={((article.unit_cost * 1.5) * article.quantity).toFixed(2)} €)
                                             </p>
-                                            <Button className="mt-4" onClick={() => openDialog(article.id)}>
-                                                Ajouter une vente
-                                            </Button>{' '}
-                                            <Link href={`/articles/${article.id}/edit`}>
-                                                <Button variant="secondary" className="mt-2">
-                                                    Modifier
+                                            <p className={`text-sm mt-1 font-medium ${scoreColor}`}>
+                                                🔥 Score de rentabilité : {score} / 100
+                                            </p>
+                                            <div className="flex flex-row gap-2 mt-4">
+                                                <Button onClick={() => openDialog(article.id)}>
+                                                    Ajouter une vente
                                                 </Button>
-                                            </Link>
+                                                <Link href={`/articles/${article.id}/edit`}>
+                                                    <Button variant="secondary">
+                                                        Modifier
+                                                    </Button>
+                                                </Link>
+                                                {article.sales && article.sales.length > 0 && (
+                                                    <Link href={`/articles/${article.id}/sales`}>
+                                                        <Button variant="outline">
+                                                            Voir les ventes ({article.sales.length})
+                                                        </Button>
+                                                    </Link>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 );

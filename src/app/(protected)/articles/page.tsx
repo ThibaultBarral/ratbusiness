@@ -200,7 +200,10 @@ export default function ArticlesPage() {
                                                 </p>
                                             )}
                                             <p className="text-sm mt-1 text-green-700">
-                                                💰 Prix conseillé (x3s) : {suggestedPrice} €
+                                                💰 Prix conseillé (x3) : {suggestedPrice} €
+                                            </p>
+                                            <p className="text-sm mt-1 text-orange-600">
+                                                💡 Prix minimum (x1.5) : {(article.unit_cost * 1.5).toFixed(2)} €
                                             </p>
                                             <Button className="mt-4" onClick={() => openDialog(article.id)}>
                                                 Ajouter une vente

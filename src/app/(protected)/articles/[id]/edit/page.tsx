@@ -20,6 +20,7 @@ export default function EditArticlePage() {
     const router = useRouter();
     const params = useParams();
     const supabase = createClient();
+    const [userId, setUserId] = useState<string | null>(null);
 
     const [name, setName] = useState("");
     const [quantity, setQuantity] = useState(1);
@@ -28,6 +29,18 @@ export default function EditArticlePage() {
     const [imageUrl, setImageUrl] = useState("");
     const [newImage, setNewImage] = useState<File | null>(null);
     const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        const fetchUser = async () => {
+            const {
+                data: { user },
+            } = await supabase.auth.getUser();
+            setUserId(user?.id || null);
+        };
+
+        fetchUser();
+        fetchArticle();
+    }, []);
 
     const fetchArticle = async () => {
         const { data, error } = await supabase
@@ -43,15 +56,22 @@ export default function EditArticlePage() {
             setQuantity(data.quantity);
             setPurchasePriceTotal(data.purchase_price_total);
             setPlatform(data.platform || "");
-            setImageUrl(data.image_url || "");
+            if (data.image_url) {
+                const filePath = data.image_url?.split("/article-images/")[1]?.split("?")[0];
+                const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+                    .from("article-images")
+                    .createSignedUrl(filePath, 60 * 60 * 24 * 7); // 7 jours
+
+                if (signedUrlData?.signedUrl) {
+                    setImageUrl(signedUrlData.signedUrl);
+                } else {
+                    console.error("Erreur lors de la génération de l’URL signée", signedUrlError);
+                }
+            }
         }
 
         setLoading(false);
     };
-
-    useEffect(() => {
-        fetchArticle();
-    }, []);
 
     const handleUpdate = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -69,21 +89,25 @@ export default function EditArticlePage() {
                 await supabase.storage.from("article-images").remove([oldPath]);
             }
 
-            const newFileName = `${Date.now()}-${newImage.name}`;
+            const filePath = `${userId}/${Date.now()}-${newImage.name}`;
             const { error: uploadError } = await supabase.storage
                 .from("article-images")
-                .upload(newFileName, newImage, { cacheControl: "3600", upsert: false });
+                .upload(filePath, newImage, {
+                    cacheControl: "3600",
+                    upsert: false,
+                    metadata: { owner: userId || "" },
+                });
 
             if (uploadError) {
                 alert("Erreur lors de l\u2019upload de la nouvelle image : " + uploadError.message);
                 return;
             }
 
-            const { data: publicUrlData } = supabase.storage
+            const { data: signedUrlData } = await supabase.storage
                 .from("article-images")
-                .getPublicUrl(newFileName);
+                .createSignedUrl(filePath, 60 * 60 * 24 * 7);
 
-            updatedFields.image_url = publicUrlData.publicUrl;
+            updatedFields.image_url = signedUrlData?.signedUrl;
         }
 
         const { error } = await supabase.from("articles").update(updatedFields).eq("id", params.id);

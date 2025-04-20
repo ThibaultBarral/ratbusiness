@@ -20,8 +20,8 @@ import { createClient } from "../../../utils/supabase/client";
 import { format, isSameMonth, isSameYear, subDays, isAfter } from "date-fns";
 import { Label } from "@/components/ui/label";
 
-interface MonthlyStats {
-    month: string;
+interface ChartStats {
+    date: string;
     revenue: number;
     profit: number;
 }
@@ -29,16 +29,16 @@ interface MonthlyStats {
 const chartConfig = {
     revenue: {
         label: "Chiffre d'affaires",
-        color: "hsl(var(--chart-1))",
+        color: "lightgreen",
     },
     profit: {
         label: "Bénéfice",
-        color: "hsl(var(--chart-2))",
+        color: "green",
     },
 } satisfies ChartConfig;
 
 export function SalesChart() {
-    const [chartData, setChartData] = useState<MonthlyStats[]>([]);
+    const [chartData, setChartData] = useState<ChartStats[]>([]);
     const [filter, setFilter] = useState("30days");
     const supabase = createClient();
 
@@ -51,13 +51,31 @@ export function SalesChart() {
 
             const { data: sales, error } = await supabase
                 .from("sales")
-                .select("sale_price, sale_date, article:article_id(unit_cost, user_id)")
-                .eq("article.user_id", user.id);
+                .select(`
+                    id,
+                    sale_price,
+                    sale_date,
+                    status,
+                    articles (
+                        name,
+                        unit_cost,
+                        user_id
+                    )
+                `);
 
-            if (error || !sales) return;
+            if (error || !sales) {
+                console.error("Erreur récupération ventes :", error?.message);
+                return;
+            }
+
+            // Filter sales belonging to current user
+            const userSales = sales.filter((sale) => {
+                const article = Array.isArray(sale.articles) ? sale.articles[0] : sale.articles;
+                return article?.user_id === user.id;
+            });
 
             const today = new Date();
-            const filteredSales = sales.filter((sale) => {
+            const filteredSales = userSales.filter((sale) => {
                 const saleDate = new Date(sale.sale_date);
                 if (filter === "7days") return isAfter(saleDate, subDays(today, 7));
                 if (filter === "30days") return isAfter(saleDate, subDays(today, 30));
@@ -66,31 +84,76 @@ export function SalesChart() {
                 return true;
             });
 
-            const monthlyMap = new Map<string, { revenue: number; profit: number }>();
+            const map = new Map<string, { revenue: number; profit: number }>();
 
             for (const sale of filteredSales) {
                 const date = new Date(sale.sale_date);
-                const month = format(date, "MMMM");
-                const revenue = sale.sale_price || 0;
-                const cost = sale.article?.[0]?.unit_cost || 0;
-                const profit = revenue - cost;
-
-                if (!monthlyMap.has(month)) {
-                    monthlyMap.set(month, { revenue: 0, profit: 0 });
+                let key = "";
+                if (filter === "year") {
+                    key = format(date, "MM/yyyy");
+                } else {
+                    key = format(date, "dd/MM");
                 }
 
-                const current = monthlyMap.get(month)!;
+                const revenue = sale.sale_price || 0;
+                const article = Array.isArray(sale.articles) ? sale.articles[0] : sale.articles;
+                const unitCost = article?.unit_cost || 0;
+                const profit = revenue - unitCost;
+
+                if (!map.has(key)) {
+                    map.set(key, { revenue: 0, profit: 0 });
+                }
+
+                const current = map.get(key)!;
                 current.revenue += revenue;
                 current.profit += profit;
             }
 
-            const data: MonthlyStats[] = Array.from(monthlyMap.entries()).map(
-                ([month, stats]) => ({
-                    month,
-                    revenue: parseFloat(stats.revenue.toFixed(2)),
-                    profit: parseFloat(stats.profit.toFixed(2)),
-                })
-            );
+            let data: ChartStats[] = [];
+
+            if (filter === "month") {
+                const today = new Date();
+                const end = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+                const daysInMonth = end.getDate();
+
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const dateKey = day.toString().padStart(2, "0") + "/" + (today.getMonth() + 1).toString().padStart(2, "0");
+                    const stats = map.get(dateKey) || { revenue: 0, profit: 0 };
+                    data.push({
+                        date: dateKey,
+                        revenue: parseFloat(stats.revenue.toFixed(2)),
+                        profit: parseFloat(stats.profit.toFixed(2)),
+                    });
+                }
+            } else if (filter === "year") {
+                const today = new Date();
+                const monthNames = [
+                    "Janv", "Févr", "Mars", "Avr", "Mai", "Juin",
+                    "Juil", "Août", "Sept", "Oct", "Nov", "Déc"
+                ];
+                for (let month = 0; month < 12; month++) {
+                    const monthStr = (month + 1).toString().padStart(2, "0");
+                    const dateKey = monthStr + "/" + today.getFullYear();
+                    const stats = map.get(dateKey) || { revenue: 0, profit: 0 };
+                    data.push({
+                        date: monthNames[month],
+                        revenue: parseFloat(stats.revenue.toFixed(2)),
+                        profit: parseFloat(stats.profit.toFixed(2)),
+                    });
+                }
+            } else {
+                data = Array.from(map.entries()).map(
+                    ([date, stats]) => ({
+                        date,
+                        revenue: parseFloat(stats.revenue.toFixed(2)),
+                        profit: parseFloat(stats.profit.toFixed(2)),
+                    })
+                ).sort((a, b) => {
+                    const [dayA, monthA] = a.date.split("/").map(Number);
+                    const [dayB, monthB] = b.date.split("/").map(Number);
+                    return monthA - monthB || dayA - dayB;
+                });
+            }
 
             setChartData(data);
         };
@@ -137,7 +200,7 @@ export function SalesChart() {
                     >
                         <CartesianGrid vertical={false} />
                         <XAxis
-                            dataKey="month"
+                            dataKey="date"
                             tickLine={false}
                             axisLine={false}
                             tickMargin={8}
@@ -171,14 +234,14 @@ export function SalesChart() {
                         </defs>
                         <Area
                             dataKey="revenue"
-                            type="natural"
+                            type="monotone"
                             fill="url(#fillRevenue)"
                             stroke="var(--color-revenue)"
                             stackId="a"
                         />
                         <Area
                             dataKey="profit"
-                            type="natural"
+                            type="monotone"
                             fill="url(#fillProfit)"
                             stroke="var(--color-profit)"
                             stackId="a"

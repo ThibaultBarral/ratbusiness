@@ -8,7 +8,7 @@ import Link from "next/link";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { format, differenceInDays, parseISO } from "date-fns";
+import { format, differenceInDays, parseISO, subDays } from "date-fns";
 import {
     Tabs,
     TabsList,
@@ -69,6 +69,7 @@ export default function ArticlesPage() {
     const [salePrice, setSalePrice] = useState("");
     const [saleDate, setSaleDate] = useState(format(new Date(), "yyyy-MM-dd"));
     const [tabValue, setTabValue] = useState("actifs");
+    const [stockValueGrowthPercent, setStockValueGrowthPercent] = useState<number | null>(null);
     const supabase = createClient();
 
     const fetchArticles = async () => {
@@ -148,11 +149,43 @@ export default function ArticlesPage() {
         }
     };
 
-    const stockValue = articles.reduce((total, article) => {
-        const soldQty = article.sales?.length || 0;
-        const remainingQty = article.quantity - soldQty;
-        return total + remainingQty * article.unit_cost;
-    }, 0);
+    const calculateStockValue = (articles: { id: string; quantity: number; unit_cost: number; sales: { sale_date: string }[] }[]) => {
+        return articles.reduce((total, article) => {
+            const soldQty = article.sales?.length || 0;
+            const remainingQty = article.quantity - soldQty;
+            return total + remainingQty * article.unit_cost;
+        }, 0);
+    };
+
+    const stockValue = calculateStockValue(articles);
+    useEffect(() => {
+        const fetchPastStockValue = async () => {
+            const { data, error } = await supabase
+                .from("articles")
+                .select("id, quantity, unit_cost, sales(sale_date)")
+                .lte("purchase_date", format(new Date(), "yyyy-MM-dd"));
+
+            if (!error && data) {
+                const pastArticles = data.map((article: { id: string; quantity: number; unit_cost: number; sales: { sale_date: string }[] }) => {
+                    const salesLast7Days = article.sales?.filter((s: { sale_date: string }) => {
+                        const saleDate = parseISO(s.sale_date);
+                        return saleDate >= subDays(new Date(), 7);
+                    }) || [];
+
+                    return {
+                        ...article,
+                        sales: salesLast7Days,
+                    };
+                });
+
+                const pastValue = calculateStockValue(pastArticles);
+                const growth = pastValue !== 0 ? ((stockValue - pastValue) / Math.abs(pastValue)) * 100 : null;
+                if (growth !== null) setStockValueGrowthPercent(growth);
+            }
+        };
+
+        fetchPastStockValue();
+    }, [stockValue]);
 
     return (
         <DashboardLayout>
@@ -252,10 +285,27 @@ export default function ArticlesPage() {
                                                 </p>
                                             )}
                                             <p className="text-sm mt-1 text-green-700">
-                                                💰 Prix conseillé (x3) : {((article.unit_cost * 3).toFixed(2))} € (={(parseFloat((article.unit_cost * 3).toFixed(2)) * article.quantity).toFixed(2)} €)
+                                                💰 Prix conseillé (x3) : {((article.unit_cost * 3).toFixed(2))} €
                                             </p>
                                             <p className="text-sm mt-1 text-orange-600">
-                                                💡 Prix minimum (x1.5) : {(article.unit_cost * 1.5).toFixed(2)} € (={((article.unit_cost * 1.5) * article.quantity).toFixed(2)} €)
+                                                💡 Prix minimum (x1.5) : {(article.unit_cost * 1.5).toFixed(2)} €
+                                            </p>
+                                            <p className="text-sm mt-1 text-blue-700">
+                                                🧠 Assistant Pricing : Prix recommandé :{" "}
+                                                <strong>
+                                                    {(() => {
+                                                        const baseMultiplier = 3;
+                                                        const minMultiplier = 1.5;
+                                                        const defaultMultiplier =
+                                                            article.sales.length === 0
+                                                                ? daysSincePurchaseForBenefit && daysSincePurchaseForBenefit > 90
+                                                                    ? minMultiplier
+                                                                    : baseMultiplier
+                                                                : (article.sales.reduce((sum, s) => sum + s.sale_price, 0) / article.sales.length) / article.unit_cost;
+                                                        const suggestedPrice = (article.unit_cost * defaultMultiplier).toFixed(2);
+                                                        return `${suggestedPrice} €`;
+                                                    })()}
+                                                </strong>
                                             </p>
                                             <details className={`text-sm mt-1 font-medium ${scoreColor}`}>
                                                 <summary>
@@ -369,8 +419,25 @@ export default function ArticlesPage() {
                 </DialogContent>
             </Dialog>
             <div className="fixed bottom-6 right-6 z-50">
-                <div className="bg-white border shadow-lg rounded-xl px-4 py-3 text-sm text-muted-foreground">
-                    💼 Stock restant : <span className="font-semibold text-black">{stockValue.toFixed(2)} €</span>
+                <div className="bg-white border shadow-lg rounded-xl px-4 py-3 text-sm text-muted-foreground w-64">
+                    <div className="flex justify-between items-center mb-2">
+                        <span>💼 Stock restant :</span>
+                        <span className="font-semibold text-black">{stockValue.toFixed(2)} €</span>
+                    </div>
+                    {stockValueGrowthPercent !== null && (
+                        <div className="mt-2">
+                            <div className="flex justify-between text-xs text-gray-500 mb-1">
+                                <span>Valeur du stock : {stockValueGrowthPercent > 0 ? "⬆️ (augmentation)" : stockValueGrowthPercent < 0 ? "⬇️ (baisse)" : "➡️ (stable)"}</span>
+                                <span>{Math.abs(stockValueGrowthPercent).toFixed(1)}%</span>
+                            </div>
+                            <div className="w-full bg-gray-300 h-2 rounded-full overflow-hidden shadow-inner">
+                                <div
+                                    className={`h-full ${stockValueGrowthPercent > 0 ? "bg-blue-500" : stockValueGrowthPercent < 0 ? "bg-orange-500" : "bg-gray-500"}`}
+                                    style={{ width: `${Math.min(Math.abs(stockValueGrowthPercent), 100)}%` }}
+                                />
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </DashboardLayout>

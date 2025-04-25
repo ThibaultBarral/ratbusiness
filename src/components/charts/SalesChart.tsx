@@ -189,7 +189,7 @@ export function SalesChart() {
 
                 <ChartContainer
                     config={chartConfig}
-                    className="w-full overflow-x-auto max-h-[420px]"
+                    className="w-full overflow-x-auto max-h-[420px] h-[70vh]"
                 >
                     <AreaChart
                         accessibilityLayer

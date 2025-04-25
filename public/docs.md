@@ -4,64 +4,89 @@ Bienvenue sur **Ratbusiness**, votre tableau de bord tout-en-un pour suivre vos 
 
 ---
 
-## Fonctionnalités principales
+## 1. Démarrer avec Ratbusiness
 
-- **Articles** : Gérez tous les produits mis en vente.
-- **Ventes** : Ajoutez facilement une vente.
-- **Statistiques** : Visualisez vos performances.
-- **Dashboard** : Vue d'ensemble (CA, bénéfices, marges...).
-
----
-
-## 1. Ajouter un article
-
+### Création d’un article
 1. Allez dans l’onglet **Articles**
 2. Cliquez sur **Ajouter un article**
 3. Renseignez les informations nécessaires
 4. Enregistrez
 
+### Gestion des articles
+- Vous pouvez modifier ou supprimer un article à tout moment.
+- Les articles avec stock épuisé sont automatiquement archivés.
+
 ---
 
-## 2. Enregistrer une vente
+## 2. Enregistrer et gérer vos ventes
 
-1. Depuis la page **Articles**, cliquez sur **Mettre en vente**
+### Ajouter une vente
+1. Depuis la page **Articles**, cliquez sur **Ajouter une vente**
 2. Entrez le prix de vente et la date
-3. La quantité sera automatiquement mise à jour
+3. Le stock sera automatiquement mis à jour
+
+### Ventes détaillées
+- Cliquez sur **"Voir les ventes"** pour consulter l’historique d’un article.
+- Chaque vente affiche :
+  - Le prix de vente
+  - Le coût d’achat
+  - Le bénéfice généré
+  - La marge réalisée
+- Vous pouvez supprimer une vente ou la marquer comme retournée.
 
 ---
 
-## 3. Visualiser les statistiques
+## 3. Analyse de performance
 
-Depuis le **Dashboard** :
+### Score de rentabilité 🔥
+Chaque article affiche un **score sur 100** basé sur :
+- **Marge moyenne réelle sur les ventes**
+- **Vitesse moyenne entre les ventes**
+- **Rentabilité journalière (€ / jour)**
 
-- Chiffre d’affaires
-- Bénéfice
-- Marge moyenne
-- Top produits
-- Alerte de stock
+💡 Cliquez sur le score pour en afficher le détail.
 
-Filtres disponibles :
-- 7 derniers jours
-- 30 jours
-- Mois en cours
-- Année en cours
-
----
-
-## 4. Alerte de stock critique
-
-- Un article est signalé s’il reste moins de **3 unités**
-- Affichage automatique dans le dashboard
+### Graphiques de performance
+Dans l’onglet **Statistiques**, visualisez :
+- Le chiffre d’affaires
+- Le bénéfice
+- Les données sont filtrables par :
+  - 7 derniers jours
+  - 30 derniers jours
+  - Mois en cours
+  - Année en cours
 
 ---
 
-## 5. Compte & sécurité
+## 4. Aide à la décision
 
-- Déconnexion disponible dans le menu latéral
-- Paramètres (bientôt disponibles)
+### Prix conseillés 💰
+Chaque article affiche :
+- **Prix conseillé (x3)** : Marge confortable
+- **Prix minimum (x1.5)** : Seuil de rentabilité
 
 ---
 
-## 6. Support
+## 5. Stock et archivage
 
-Un onglet dédié pour l’aide et le support utilisateur.
+### Alerte de stock critique
+- Un article est signalé si le stock passe sous **3 unités**
+
+### Archives
+- Les articles vendus entièrement sont placés dans **Archivés**
+- Possibilité de les supprimer définitivement
+
+---
+
+## 6. Fonctionnalités en cours
+
+### Fil de trésorerie personnel (bientôt)
+Fonctionnalité à venir pour estimer combien transférer sur votre compte bancaire perso, en fonction des bénéfices.
+
+---
+
+## 7. Paramètres & Support
+
+- **Déconnexion** via le menu latéral
+- Accès à **Paramètres**
+- Accès à l’onglet **Support**

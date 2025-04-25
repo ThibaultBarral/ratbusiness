@@ -23,7 +23,7 @@ interface Article {
     quantity: number;
     unit_cost: number;
     platform: string;
-    sales: { id: string; sale_date: string }[];
+    sales: { id: string; sale_date: string; sale_price: number }[];
     image_url?: string;
     purchase_date?: string;
 }
@@ -74,7 +74,7 @@ export default function ArticlesPage() {
     const fetchArticles = async () => {
         const { data, error } = await supabase
             .from("articles")
-            .select("id, name, brand, quantity, unit_cost, platform, image_url, purchase_date, sales(id, sale_date)");
+            .select("id, name, brand, quantity, unit_cost, platform, image_url, purchase_date, sales(id, sale_date, sale_price)");
 
         if (error) {
             console.error("Erreur récupération articles :", error.message);
@@ -187,39 +187,47 @@ export default function ArticlesPage() {
                                 const totalSales = article.sales?.length || 0;
                                 const remaining = article.quantity - totalSales;
 
-                                const firstSaleDate = article.sales?.[0]?.sale_date;
-                                const daysToFirstSale = firstSaleDate && article.purchase_date
-                                    ? differenceInDays(parseISO(firstSaleDate), parseISO(article.purchase_date))
+                                // Sale dates triées
+                                const saleDates = article.sales?.map(sale => parseISO(sale.sale_date)).sort((a, b) => a.getTime() - b.getTime()) || [];
+
+                                // Vitesse moyenne entre ventes (déjà correct)
+                                const timeDiffs = saleDates.length > 1
+                                    ? saleDates.slice(1).map((date, i) => differenceInDays(date, saleDates[i]))
+                                    : [];
+                                const avgDaysBetweenSales = timeDiffs.length > 0
+                                    ? timeDiffs.reduce((a, b) => a + b, 0) / timeDiffs.length
                                     : null;
-                                const daysSincePurchase = article.purchase_date
+
+                                // Total bénéfice et bénéfice/jour (déjà correct)
+                                const totalBenefit = article.sales && article.sales.length > 0
+                                    ? article.sales.reduce((sum, sale) => sum + (sale.sale_price - article.unit_cost), 0)
+                                    : 0;
+                                const daysSincePurchaseForBenefit = article.purchase_date
                                     ? differenceInDays(new Date(), parseISO(article.purchase_date))
                                     : null;
-
-                                let speedScore = 0;
-                                if (daysToFirstSale !== null) {
-                                    if (daysToFirstSale <= 7) speedScore = 100;
-                                    else if (daysToFirstSale <= 30) speedScore = 80;
-                                    else if (daysToFirstSale <= 90) speedScore = 60;
-                                    else if (daysToFirstSale <= 180) speedScore = 40;
-                                    else speedScore = 20;
-                                }
-                                // Pénalité si aucun article n'a été vendu depuis longtemps
-                                if (totalSales === 0 && daysSincePurchase !== null) {
-                                    if (daysSincePurchase > 180) speedScore -= 40;
-                                    else if (daysSincePurchase > 90) speedScore -= 20;
-                                    else if (daysSincePurchase > 30) speedScore -= 10;
-                                    speedScore = Math.max(0, speedScore);
-                                }
-
-                                const sellThroughRate = article.quantity > 0
-                                    ? (totalSales / article.quantity) * 100
-                                    : 0;
-                                const margin = (article.unit_cost > 0)
-                                    ? ((article.unit_cost * 3 - article.unit_cost) / article.unit_cost) * 100
+                                const benefitPerDay = (daysSincePurchaseForBenefit && daysSincePurchaseForBenefit > 0)
+                                    ? totalBenefit / daysSincePurchaseForBenefit
                                     : 0;
 
-                                // Score basé sur marge (40%), vitesse de vente (30%), taux de vente (30%)
-                                const score = Math.round((margin * 0.4) + (speedScore * 0.3) + (sellThroughRate * 0.3));
+                                // Marge moyenne réelle sur les ventes (nouvelle logique)
+                                const averageMargin = article.sales.length > 0
+                                    ? article.sales.reduce((sum, sale) => sum + (sale.sale_price - article.unit_cost), 0) / article.sales.length
+                                    : 0;
+                                const marginScore = article.unit_cost > 0
+                                    ? Math.min((averageMargin / article.unit_cost) * 100, 100)
+                                    : 0;
+
+                                // Score vitesse (inchangé)
+                                const speedScore = avgDaysBetweenSales !== null
+                                    ? avgDaysBetweenSales <= 2 ? 100 : avgDaysBetweenSales <= 5 ? 80 : avgDaysBetweenSales <= 10 ? 60 : avgDaysBetweenSales <= 30 ? 40 : 20
+                                    : article.sales.length === 0 && daysSincePurchaseForBenefit !== null
+                                        ? daysSincePurchaseForBenefit > 90 ? 10 : daysSincePurchaseForBenefit > 30 ? 30 : 50
+                                        : 0;
+
+                                // Score rentabilité (inchangé)
+                                const rentabilityScore = benefitPerDay >= 3 ? 100 : benefitPerDay >= 2 ? 80 : benefitPerDay >= 1 ? 60 : benefitPerDay > 0 ? 40 : 0;
+
+                                const score = Math.round(marginScore * 0.3 + speedScore * 0.3 + rentabilityScore * 0.4);
 
                                 let scoreColor = "text-gray-600";
                                 if (score >= 80) scoreColor = "text-green-600";
@@ -249,9 +257,19 @@ export default function ArticlesPage() {
                                             <p className="text-sm mt-1 text-orange-600">
                                                 💡 Prix minimum (x1.5) : {(article.unit_cost * 1.5).toFixed(2)} € (={((article.unit_cost * 1.5) * article.quantity).toFixed(2)} €)
                                             </p>
-                                            <p className={`text-sm mt-1 font-medium ${scoreColor}`}>
-                                                🔥 Score de rentabilité : {score} / 100
-                                            </p>
+                                            <details className={`text-sm mt-1 font-medium ${scoreColor}`}>
+                                                <summary>
+                                                    🔥 Score de rentabilité : {score} / 100
+                                                </summary>
+                                                <div className="mt-2 pl-4 text-muted-foreground">
+                                                    <p>🧮 <strong>Composé de :</strong></p>
+                                                    <ul className="list-disc ml-4">
+                                                        <li>Marge moyenne réelle sur les ventes ➜ <strong>{marginScore.toFixed(0)} / 100</strong></li>
+                                                        <li>Vitesse moyenne entre ventes ➜ <strong>{speedScore.toFixed(0)} / 100</strong></li>
+                                                        <li>Rentabilité (€/jour) ➜ <strong>{rentabilityScore.toFixed(0)} / 100</strong></li>
+                                                    </ul>
+                                                </div>
+                                            </details>
                                             <div className="flex flex-row gap-2 mt-4">
                                                 <Button onClick={() => openDialog(article.id)}>
                                                     Ajouter une vente

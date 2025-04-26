@@ -64,7 +64,7 @@ export default function LoginPage() {
                             onClick={() => router.push("/signup")}
                             className="w-1/2 py-2 px-4 bg-gray-200 text-gray-800 font-semibold rounded-md hover:bg-gray-300 transition"
                         >
-                            S'inscrire
+                            S&apos;inscrire
                         </button>
                     </div>
                 </form>

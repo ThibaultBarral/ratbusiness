@@ -10,6 +10,7 @@ interface Sale {
     id: string;
     sale_price: number;
     sale_date: string;
+    user_id: string;
 }
 
 interface Article {
@@ -17,6 +18,7 @@ interface Article {
     name: string;
     purchase_price_total: number;
     quantity: number;
+    user_id: string;
     sales: Sale[];
 }
 
@@ -27,19 +29,28 @@ export default function ArticleSalesPage() {
 
     const [article, setArticle] = useState<Article | null>(null);
     const [loading, setLoading] = useState(true);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
     useEffect(() => {
         const fetchSales = async () => {
-            const { data, error } = await supabase
+            const { data: { user }, error: userError } = await supabase.auth.getUser();
+            if (userError || !user) {
+                setErrorMessage("Accès non autorisé.");
+                setLoading(false);
+                return;
+            }
+
+            const { data: articleData, error: articleError } = await supabase
                 .from("articles")
-                .select("id, name, purchase_price_total, quantity, sales(id, sale_price, sale_date, article_id)")
+                .select("id, name, purchase_price_total, quantity, user_id, sales(id, sale_price, sale_date, article_id, user_id)")
                 .eq("id", articleId)
+                .eq("user_id", user.id)
                 .single();
 
-            if (error) {
-                console.error("Erreur récupération article:", error.message);
+            if (articleError || !articleData) {
+                setErrorMessage("Erreur lors de la récupération de l'article.");
             } else {
-                setArticle(data);
+                setArticle(articleData);
             }
             setLoading(false);
         };
@@ -48,11 +59,22 @@ export default function ArticleSalesPage() {
     }, [articleId]);
 
     const handleDeleteSale = async (saleId: string) => {
-        const { error } = await supabase.from("sales").delete().eq("id", saleId);
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        if (userError || !user) {
+            console.error("Erreur récupération utilisateur pour suppression.");
+            return;
+        }
+
+        const { error } = await supabase
+            .from("sales")
+            .delete()
+            .match({ id: saleId, user_id: user.id });
+
         if (error) {
             console.error("Erreur suppression vente :", error.message);
             return;
         }
+
         setArticle((prev) => {
             if (!prev) return prev;
             return {
@@ -70,6 +92,8 @@ export default function ArticleSalesPage() {
                 <h2 className="text-2xl font-bold">Ventes de l&apos;article</h2>
                 {loading ? (
                     <p>Chargement...</p>
+                ) : errorMessage ? (
+                    <p className="text-sm text-red-500">{errorMessage}</p>
                 ) : article ? (
                     <div className="mt-4">
                         <h3 className="text-lg font-semibold mb-2">{article.name}</h3>

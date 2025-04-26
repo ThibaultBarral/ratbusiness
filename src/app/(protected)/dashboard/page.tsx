@@ -4,6 +4,7 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { createClient } from "../../../../utils/supabase/client";
 import { SalesChart } from "@/components/charts/SalesChart";
 import Link from "next/link";
@@ -29,6 +30,18 @@ export default function DashboardPage() {
     const [topProfitableArticles, setTopProfitableArticles] = useState<ArticleProfit[]>([]);
     const [criticalStockArticles, setCriticalStockArticles] = useState<StockAlert[]>([]);
     const supabase = createClient();
+    const router = useRouter();
+
+    useEffect(() => {
+        const checkAuth = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                router.push("/login");
+            }
+        };
+
+        checkAuth();
+    }, [supabase, router]);
 
     const [showReport, setShowReport] = useState(() => {
         if (typeof window !== "undefined") {

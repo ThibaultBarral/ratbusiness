@@ -109,7 +109,7 @@ export function SalesChart() {
                 current.profit += profit;
             }
 
-            let data: ChartStats[] = [];
+            const data: ChartStats[] = [];
 
             if (filter === "month") {
                 const today = new Date();
@@ -142,17 +142,30 @@ export function SalesChart() {
                     });
                 }
             } else {
-                data = Array.from(map.entries()).map(
-                    ([date, stats]) => ({
-                        date,
-                        revenue: parseFloat(stats.revenue.toFixed(2)),
-                        profit: parseFloat(stats.profit.toFixed(2)),
-                    })
-                ).sort((a, b) => {
-                    const [dayA, monthA] = a.date.split("/").map(Number);
-                    const [dayB, monthB] = b.date.split("/").map(Number);
-                    return monthA - monthB || dayA - dayB;
-                });
+                const today = new Date();
+                if (filter === "7days") {
+                    for (let i = 6; i >= 0; i--) {
+                        const date = subDays(today, i);
+                        const dateKey = format(date, "dd/MM");
+                        const stats = map.get(dateKey) || { revenue: 0, profit: 0 };
+                        data.push({
+                            date: dateKey,
+                            revenue: parseFloat(stats.revenue.toFixed(2)),
+                            profit: parseFloat(stats.profit.toFixed(2)),
+                        });
+                    }
+                } else if (filter === "30days") {
+                    for (let i = 29; i >= 0; i--) {
+                        const date = subDays(today, i);
+                        const dateKey = format(date, "dd/MM");
+                        const stats = map.get(dateKey) || { revenue: 0, profit: 0 };
+                        data.push({
+                            date: dateKey,
+                            revenue: parseFloat(stats.revenue.toFixed(2)),
+                            profit: parseFloat(stats.profit.toFixed(2)),
+                        });
+                    }
+                }
             }
 
             setChartData(data);

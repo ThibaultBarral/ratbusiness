@@ -31,42 +31,49 @@ export default function EditArticlePage() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const fetchUser = async () => {
+        const fetchUserAndArticle = async () => {
             const {
                 data: { user },
             } = await supabase.auth.getUser();
-            setUserId(user?.id || null);
+            const uid = user?.id || null;
+            setUserId(uid);
+
+            if (uid) {
+                await fetchArticle(uid);
+            }
         };
 
-        fetchUser();
-        fetchArticle();
+        fetchUserAndArticle();
     }, []);
 
-    const fetchArticle = async () => {
+    const fetchArticle = async (uid: string) => {
         const { data, error } = await supabase
             .from("articles")
             .select("*")
             .eq("id", params.id)
+            .eq("user_id", uid)
             .single();
 
-        if (error) {
+        if (error || !data) {
             console.error("Erreur lors du chargement de l'article", error);
-        } else {
-            setName(data.name);
-            setQuantity(data.quantity);
-            setPurchasePriceTotal(data.purchase_price_total);
-            setPlatform(data.platform || "");
-            if (data.image_url) {
-                const filePath = data.image_url?.split("/article-images/")[1]?.split("?")[0];
-                const { data: signedUrlData, error: signedUrlError } = await supabase.storage
-                    .from("article-images")
-                    .createSignedUrl(filePath, 60 * 60 * 24 * 7); // 7 jours
+            router.push("/articles"); // Redirige si l'article n'appartient pas à l'utilisateur
+            return;
+        }
 
-                if (signedUrlData?.signedUrl) {
-                    setImageUrl(signedUrlData.signedUrl);
-                } else {
-                    console.error("Erreur lors de la génération de l’URL signée", signedUrlError);
-                }
+        setName(data.name);
+        setQuantity(data.quantity);
+        setPurchasePriceTotal(data.purchase_price_total);
+        setPlatform(data.platform || "");
+        if (data.image_url) {
+            const filePath = data.image_url?.split("/article-images/")[1]?.split("?")[0];
+            const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+                .from("article-images")
+                .createSignedUrl(filePath, 60 * 60 * 24 * 7); // 7 jours
+
+            if (signedUrlData?.signedUrl) {
+                setImageUrl(signedUrlData.signedUrl);
+            } else {
+                console.error("Erreur lors de la génération de l’URL signée", signedUrlError);
             }
         }
 
@@ -76,11 +83,12 @@ export default function EditArticlePage() {
     const handleUpdate = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        const updatedFields: ArticleUpdateFields = {
+        const updatedFields: ArticleUpdateFields & { user_id: string | null } = {
             name,
             quantity,
             purchase_price_total: purchasePriceTotal,
             platform: platform || null,
+            user_id: userId,
         };
 
         if (newImage) {
@@ -110,7 +118,11 @@ export default function EditArticlePage() {
             updatedFields.image_url = signedUrlData?.signedUrl;
         }
 
-        const { error } = await supabase.from("articles").update(updatedFields).eq("id", params.id);
+        const { error } = await supabase
+            .from("articles")
+            .update(updatedFields)
+            .eq("id", params.id)
+            .eq("user_id", userId);
 
         if (error) {
             alert("Erreur lors de la mise à jour : " + error.message);
@@ -123,7 +135,11 @@ export default function EditArticlePage() {
         const confirm = window.confirm("Es-tu sûr de vouloir supprimer cet article ?");
         if (!confirm) return;
 
-        const { error } = await supabase.from("articles").delete().eq("id", params.id);
+        const { error } = await supabase
+            .from("articles")
+            .delete()
+            .eq("id", params.id)
+            .eq("user_id", userId);
         if (error) {
             alert("Erreur lors de la suppression : " + error.message);
         } else {

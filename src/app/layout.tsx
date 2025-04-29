@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { ReactNode } from "react";
 
+import { Toaster } from 'sonner';
+
+
 export const metadata: Metadata = {
   title: "Ratbusiness",
   description: "Dashboard de gestion des ventes et bénéfices sur Vinted.",
@@ -19,7 +22,10 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta charSet="utf-8" />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <Toaster richColors position="top-center" />
+      </body>
     </html>
   );
 }

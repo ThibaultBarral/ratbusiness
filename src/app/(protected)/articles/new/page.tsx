@@ -1,7 +1,7 @@
 "use client";
 import heic2any from "heic2any";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "../../../../../utils/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -12,7 +12,20 @@ import DashboardLayout from "@/components/layout/DashboardLayout";
 export default function NewArticlePage() {
     const router = useRouter();
     const supabase = createClient();
+
+    useEffect(() => {
+        const checkAuth = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                router.push("/login");
+            }
+        };
+
+        checkAuth();
+    }, [supabase, router]);
+
     const [imageFile, setImageFile] = useState<File | null>(null);
+    const [loading, setLoading] = useState(false);
 
     const [form, setForm] = useState({
         name: "",
@@ -33,11 +46,14 @@ export default function NewArticlePage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setLoading(true);
 
-        const {
-            data: { user },
-        } = await supabase.auth.getUser();
-        if (!user) return;
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        if (!user || userError) {
+            alert("Erreur : Utilisateur non connecté.");
+            setLoading(false);
+            return;
+        }
 
         let imageUrl = "";
 
@@ -47,11 +63,14 @@ export default function NewArticlePage() {
             if (imageFile.type === "image/heic" || imageFile.name.endsWith(".heic")) {
                 try {
                     const convertedBlob = await heic2any({ blob: imageFile, toType: "image/jpeg" });
-                    finalFile = new File([Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob], imageFile.name.replace(/\.heic$/i, ".jpg"), {
-                        type: "image/jpeg",
-                    });
+                    finalFile = new File(
+                        [Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob],
+                        imageFile.name.replace(/\.heic$/i, ".jpg"),
+                        { type: "image/jpeg" }
+                    );
                 } catch (error) {
-                    alert("Erreur lors de la conversion HEIC : " + (error as Error).message);
+                    alert("Erreur conversion HEIC : " + (error as Error).message);
+                    setLoading(false);
                     return;
                 }
             }
@@ -63,6 +82,7 @@ export default function NewArticlePage() {
 
             if (uploadError) {
                 alert("Erreur upload image : " + uploadError.message);
+                setLoading(false);
                 return;
             }
 
@@ -71,26 +91,29 @@ export default function NewArticlePage() {
                 .createSignedUrl(filePath, 60 * 60 * 24 * 365); // 1 an
 
             if (urlError) {
-                alert("Erreur génération URL signée : " + urlError.message);
+                alert("Erreur URL signée : " + urlError.message);
+                setLoading(false);
                 return;
             }
 
             imageUrl = signedUrlData?.signedUrl || "";
         }
 
-        const { error } = await supabase.from("articles").insert({
+        const { error: insertError } = await supabase.from("articles").insert({
             ...form,
             purchase_price_total: parseFloat(form.purchase_price_total),
             quantity: parseInt(form.quantity),
             image_url: imageUrl,
-            user_id: user.id,
+            user_id: user.id, // ✅ Important pour SaaS
         });
 
-        if (!error) {
-            router.push("/articles");
-        } else {
-            alert("Erreur : " + error.message);
+        if (insertError) {
+            alert("Erreur enregistrement article : " + insertError.message);
+            setLoading(false);
+            return;
         }
+
+        router.push("/articles");
     };
 
     return (
@@ -170,7 +193,9 @@ export default function NewArticlePage() {
                     />
                 </div>
 
-                <Button type="submit">Enregistrer</Button>
+                <Button type="submit" disabled={loading}>
+                    {loading ? "Enregistrement en cours..." : "Enregistrer"}
+                </Button>
             </form>
         </DashboardLayout>
     );

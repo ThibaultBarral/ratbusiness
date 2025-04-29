@@ -4,6 +4,10 @@ import { ReactNode } from "react";
 
 import { Toaster } from 'sonner';
 
+import { Analytics } from '@vercel/analytics/next';
+import { SpeedInsights } from '@vercel/speed-insights/next';
+
+
 
 export const metadata: Metadata = {
   title: "Ratbusiness",
@@ -25,6 +29,8 @@ export default function RootLayout({
       <body>
         {children}
         <Toaster richColors position="top-center" />
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );

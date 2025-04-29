@@ -1,21 +1,19 @@
 "use client";
 
-import { login } from './action';
+import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
 
-export default function LoginPage() {
+function LoginForm() {
     const searchParams = useSearchParams();
     const signupSuccess = searchParams.get("signupSuccess");
     const [showMessage, setShowMessage] = useState(false);
+    const router = useRouter();
 
     useEffect(() => {
         if (signupSuccess === "1") {
             setShowMessage(true);
         }
     }, [signupSuccess]);
-
-    const router = useRouter();
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
@@ -70,5 +68,15 @@ export default function LoginPage() {
                 </form>
             </div>
         </div>
+    );
+}
+
+import { login } from './action';
+
+export default function LoginPage() {
+    return (
+        <Suspense fallback={<div>Chargement...</div>}>
+            <LoginForm />
+        </Suspense>
     );
 }

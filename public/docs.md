@@ -85,8 +85,7 @@ Fonctionnalité à venir pour estimer combien transférer sur votre compte banca
 
 ---
 
-## 7. Paramètres & Support
+## 7. Paramètres
 
 - **Déconnexion** via le menu latéral
 - Accès à **Paramètres**
-- Accès à l’onglet **Support**

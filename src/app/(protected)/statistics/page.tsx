@@ -8,9 +8,14 @@ import {
     CardTitle,
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useEffect, useState } from "react";
 import { createClient } from "../../../../utils/supabase/client";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import Link from "next/link";
+import { format } from "date-fns";
+import ArticleImage from "@/components/ArticleImage";
 
 export default function StatisticsPage() {
     const supabase = createClient();
@@ -36,6 +41,14 @@ export default function StatisticsPage() {
     const [averageSaleTime, setAverageSaleTime] = useState<number | null>(null);
 
     const [filteredStats, setFilteredStats] = useState<{ revenue: number; profit: number } | null>(null);
+    const [filteredSales, setFilteredSales] = useState<Array<{
+        id: string;
+        name: string;
+        sale_price: number;
+        sale_date: string;
+        unit_cost: number;
+        image_url: string;
+    }>>([]);
     const [dateRange, setDateRange] = useState({
         start: "",
         end: "",
@@ -267,7 +280,7 @@ export default function StatisticsPage() {
 
         const { data: sales } = await supabase
             .from("sales")
-            .select("sale_price, sale_date, article:article_id(unit_cost, user_id)")
+            .select("id, sale_price, sale_date, article:article_id(name, unit_cost, image_url, user_id)")
             .eq("article.user_id", user.id)
             .gte("sale_date", dateRange.start)
             .lte("sale_date", dateRange.end);
@@ -277,15 +290,25 @@ export default function StatisticsPage() {
         let revenue = 0;
         let profit = 0;
 
-        for (const sale of sales) {
+        const formattedSales = sales.map(sale => {
             const price = sale.sale_price ?? 0;
-            const articleData = sale.article as { unit_cost?: number } | null;
+            const articleData = sale.article as { unit_cost?: number; name?: string; image_url?: string } | null;
             const cost = articleData?.unit_cost ?? 0;
             revenue += price;
             profit += price - cost;
-        }
+
+            return {
+                id: sale.id,
+                name: articleData?.name ?? "Inconnu",
+                sale_price: price,
+                sale_date: sale.sale_date,
+                unit_cost: cost,
+                image_url: articleData?.image_url ?? "",
+            };
+        });
 
         setFilteredStats({ revenue, profit });
+        setFilteredSales(formattedSales);
     };
 
     return (
@@ -402,28 +425,26 @@ export default function StatisticsPage() {
                         </CardHeader>
                         <CardContent>
                             <div className="flex flex-col sm:flex-row gap-4 mb-4">
-                                <input
+                                <Input
                                     type="date"
-                                    className="border rounded px-3 py-2 text-sm"
                                     value={dateRange.start}
                                     onChange={(e) =>
                                         setDateRange((prev) => ({ ...prev, start: e.target.value }))
                                     }
                                 />
-                                <input
+                                <Input
                                     type="date"
-                                    className="border rounded px-3 py-2 text-sm"
                                     value={dateRange.end}
                                     onChange={(e) =>
                                         setDateRange((prev) => ({ ...prev, end: e.target.value }))
                                     }
                                 />
-                                <button
+                                <Button
                                     onClick={handleDateFilter}
-                                    className="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded text-sm"
+                                    variant="default"
                                 >
                                     Filtrer
-                                </button>
+                                </Button>
                             </div>
 
                             {filteredStats && (
@@ -451,6 +472,40 @@ export default function StatisticsPage() {
                                     </Card>
                                 </div>
                             )}
+
+                            {filteredSales.length > 0 && (
+                                <div className="mt-6">
+                                    <h3 className="text-lg font-semibold mb-4">Articles vendus pendant cette période</h3>
+                                    <div className="grid grid-cols-1 gap-4">
+                                        {filteredSales.map((sale) => {
+                                            const benefit = sale.sale_price - sale.unit_cost;
+                                            const margin = (benefit / sale.unit_cost) * 100;
+
+                                            return (
+                                                <Card key={sale.id} className="p-4">
+                                                    <div className="flex items-start gap-4">
+                                                        <div className="w-20 h-20 relative">
+                                                            <ArticleImage url={sale.image_url} />
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <h4 className="font-medium mb-2">{sale.name}</h4>
+                                                            <div className="grid grid-cols-2 gap-2 text-sm">
+                                                                <p>Prix de vente : {sale.sale_price.toFixed(2)} €</p>
+                                                                <p>Prix d&apos;achat : {sale.unit_cost.toFixed(2)} €</p>
+                                                                <p>Bénéfice : {benefit.toFixed(2)} €</p>
+                                                                <p>Marge : {margin.toFixed(1)}% (x{(1 + margin / 100).toFixed(2)})</p>
+                                                                <p className="text-muted-foreground">
+                                                                    Date : {format(new Date(sale.sale_date), "dd/MM/yyyy")}
+                                                                </p>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </Card>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
                 </TabsContent>
@@ -462,20 +517,24 @@ export default function StatisticsPage() {
                         </CardHeader>
                         <CardContent>
                             {ranking.length > 0 ? (
-                                <table className="w-full text-sm mt-4 border border-gray-200">
+                                <table className="w-full text-sm mt-4 border border-border">
                                     <thead>
-                                        <tr className="bg-gray-100">
-                                            <th className="text-left p-2 border-b">Article</th>
-                                            <th className="text-left p-2 border-b">Ventes</th>
-                                            <th className="text-left p-2 border-b">Bénéfice total (€)</th>
+                                        <tr className="bg-muted">
+                                            <th className="text-left p-2 border-b border-border">Article</th>
+                                            <th className="text-left p-2 border-b border-border">Ventes</th>
+                                            <th className="text-left p-2 border-b border-border">Bénéfice total (€)</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {ranking.map((item) => (
                                             <tr key={item.id}>
-                                                <td className="p-2 border-b">{item.name}</td>
-                                                <td className="p-2 border-b">{item.salesCount}</td>
-                                                <td className="p-2 border-b">
+                                                <td className="p-2 border-b border-border">
+                                                    <Link href={`/articles/${item.id}/sales`} className="text-primary hover:text-primary/90 hover:underline">
+                                                        {item.name}
+                                                    </Link>
+                                                </td>
+                                                <td className="p-2 border-b border-border">{item.salesCount}</td>
+                                                <td className="p-2 border-b border-border">
                                                     {item.totalProfit.toFixed(2)}
                                                 </td>
                                             </tr>
@@ -493,20 +552,24 @@ export default function StatisticsPage() {
                         </CardHeader>
                         <CardContent>
                             {fastestSelling.length > 0 ? (
-                                <table className="w-full text-sm mt-4 border border-gray-200">
+                                <table className="w-full text-sm mt-4 border border-border">
                                     <thead>
-                                        <tr className="bg-gray-100">
-                                            <th className="text-left p-2 border-b">Article</th>
-                                            <th className="text-left p-2 border-b">Ventes</th>
-                                            <th className="text-left p-2 border-b">Temps moyen (jours)</th>
+                                        <tr className="bg-muted">
+                                            <th className="text-left p-2 border-b border-border">Article</th>
+                                            <th className="text-left p-2 border-b border-border">Ventes</th>
+                                            <th className="text-left p-2 border-b border-border">Temps moyen (jours)</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {fastestSelling.map((item) => (
                                             <tr key={item.id}>
-                                                <td className="p-2 border-b">{item.name}</td>
-                                                <td className="p-2 border-b">{item.salesCount}</td>
-                                                <td className="p-2 border-b">{item.avgDays}</td>
+                                                <td className="p-2 border-b border-border">
+                                                    <Link href={`/articles/${item.id}/sales`} className="text-primary hover:text-primary/90 hover:underline">
+                                                        {item.name}
+                                                    </Link>
+                                                </td>
+                                                <td className="p-2 border-b border-border">{item.salesCount}</td>
+                                                <td className="p-2 border-b border-border">{item.avgDays}</td>
                                             </tr>
                                         ))}
                                     </tbody>
@@ -528,7 +591,9 @@ export default function StatisticsPage() {
                                 <ul className="text-sm text-muted-foreground list-disc list-inside">
                                     {lowStockArticles.map((article) => (
                                         <li key={article.id}>
-                                            {article.name} — Stock restant :{" "}
+                                            <Link href={`/articles/${article.id}/sales`} className="text-primary hover:text-primary/90 hover:underline">
+                                                {article.name}
+                                            </Link> — Stock restant :{" "}
                                             <strong>{article.remaining}</strong>
                                         </li>
                                     ))}

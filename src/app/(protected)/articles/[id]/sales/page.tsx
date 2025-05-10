@@ -5,6 +5,7 @@ import { createClient } from "../../../../../../utils/supabase/client";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { format } from "date-fns";
+import ArticleImage from "@/components/ArticleImage";
 
 interface Sale {
     id: string;
@@ -20,6 +21,7 @@ interface Article {
     quantity: number;
     user_id: string;
     sales: Sale[];
+    image_url: string;
 }
 
 export default function ArticleSalesPage() {
@@ -42,7 +44,7 @@ export default function ArticleSalesPage() {
 
             const { data: articleData, error: articleError } = await supabase
                 .from("articles")
-                .select("id, name, purchase_price_total, quantity, user_id, sales(id, sale_price, sale_date, article_id, user_id)")
+                .select("id, name, purchase_price_total, quantity, user_id, sales(id, sale_price, sale_date, article_id, user_id), image_url")
                 .eq("id", articleId)
                 .eq("user_id", user.id)
                 .single();
@@ -95,8 +97,12 @@ export default function ArticleSalesPage() {
                 ) : errorMessage ? (
                     <p className="text-sm text-red-500">{errorMessage}</p>
                 ) : article ? (
-                    <div className="mt-4">
-                        <h3 className="text-lg font-semibold mb-2">{article.name}</h3>
+                    <div className="mt-4 flex flex-col gap-4">
+                        <div className="flex items-center gap-4">
+                            <ArticleImage url={article.image_url} />
+                            <h3 className="text-lg font-semibold mb-2">{article.name}</h3>
+
+                        </div>
                         <div className="mb-4 p-3 bg-gray-100 rounded-md">
                             {(() => {
                                 const totalBenefit = article.sales.reduce((acc, sale) => acc + (sale.sale_price - unitCost), 0);
@@ -146,6 +152,6 @@ export default function ArticleSalesPage() {
                     <p className="text-sm text-red-500">Article introuvable.</p>
                 )}
             </div>
-        </DashboardLayout>
+        </DashboardLayout >
     );
 }

@@ -1,141 +1,335 @@
 "use client";
 
+import HeroSection from "@/components/HeroSection";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { Check } from "lucide-react";
 import Image from "next/image";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { createClient } from "../../utils/supabase/client";
-
 export default function HomePage() {
-  const router = useRouter();
-  const [loading, setLoading] = useState(false);
-
-  const supabase = createClient(); // Create the Supabase client instance
-
-  const handleClick = async () => {
-    setLoading(true);
-    const { data } = await supabase.auth.getUser();
-
-    if (data.user) {
-      router.push('/dashboard');
-    } else {
-      router.push('/login');
-    }
-  };
-
   return (
     <main className="min-h-screen bg-gradient-to-br from-[#0f1c16] via-[#1a2e24] to-[#0d1411] text-white">
-      {/* Hero section fullscreen sans image */}
-      <section className="h-screen flex flex-col items-center justify-center text-center px-6">
-        {/* Logo en haut à gauche */}
-        <div className="absolute top-6 left-6">
-          <Image
-            src="/assets/img/logo-ratbusiness.png"
-            alt="Logo Ratbusiness"
-            width={72}
-            height={72}
-            className="rounded-full"
-          />
-        </div>
-
-        <div className="max-w-5xl">
-          <h1 className="text-3xl sm:text-5xl font-extrabold mb-4 text-green-400">
-            Ratbusiness
-          </h1>
-          <h2 className="text-4xl sm:text-6xl font-bold mb-6 leading-tight">
-            L&apos;app qui booste ton business<br />Vinted 🚀
-          </h2>
-          <p className="text-base sm:text-lg text-gray-300 mb-10">
-            Visualise tes performances, suis tes ventes, gère ton stock.
-            <br className="hidden sm:block" />
-            Simple. Rapide. Efficace.
-          </p>
-          <Link href="/dashboard">
-            <Button onClick={handleClick} disabled={loading} size="lg" className="bg-green-500 text-black font-semibold hover:bg-green-400">
-              {loading ? 'Chargement...' : 'Lancer mon dashboard'}
-            </Button>
-          </Link>
-        </div>
-      </section>
+      <HeroSection />
 
       {/* Fonctionnalités */}
-      <section className="max-w-4xl mx-auto py-16 border-t border-gray-700 px-6">
-        <h2 className="text-3xl font-bold text-center mb-10">Fonctionnalités clés</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 text-gray-300">
-          <div>
-            <h3 className="text-xl font-semibold mb-2 text-white">📦 Gestion des articles</h3>
-            <p>Ajoutez, modifiez et suivez chaque article que vous vendez sur Vinted.</p>
-          </div>
-          <div>
-            <h3 className="text-xl font-semibold mb-2 text-white">💸 Suivi des ventes</h3>
-            <p>Gardez une trace de chaque vente et calculez automatiquement vos profits.</p>
-          </div>
-          <div>
-            <h3 className="text-xl font-semibold mb-2 text-white">📊 Statistiques dynamiques</h3>
-            <p>Visualisez votre chiffre d&apos;affaires, votre marge moyenne et vos stocks restants.</p>
-          </div>
-          <div>
-            <h3 className="text-xl font-semibold mb-2 text-white">🔒 Sécurité & confidentialité</h3>
-            <p>Vos données sont protégées et accessibles uniquement à vous.</p>
+      <section id="features" className="min-h-screen lg:h-screen flex flex-col justify-center border-t border-gray-700">
+        <div className="max-w-7xl mx-auto px-6 py-16 lg:py-0">
+          <h2 className="text-4xl lg:text-5xl font-bold text-center mb-16">
+            <span className="bg-gradient-to-r from-green-400 to-green-600 bg-clip-text text-transparent">
+              Tout ce dont vous avez besoin
+            </span>
+            <br />
+            pour gérer votre business Vinted
+          </h2>
+
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            <div className="space-y-12">
+              {/* Feature 1 */}
+              <div className="flex gap-6">
+                <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-green-500/10 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold mb-2 text-white">Gestion d&apos;inventaire avancée</h3>
+                  <p className="text-gray-300">
+                    Suivez chaque article avec précision : prix d&apos;achat, état, catégorie, marque, taille.
+                    Ajoutez des photos et des notes pour une organisation optimale.
+                  </p>
+                </div>
+              </div>
+
+              {/* Feature 2 */}
+              <div className="flex gap-6">
+                <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-green-500/10 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold mb-2 text-white">Analyses et statistiques détaillées</h3>
+                  <p className="text-gray-300">
+                    Visualisez vos performances en temps réel : chiffre d&apos;affaires, marge bénéficiaire,
+                    meilleurs produits, tendances de vente et prévisions.
+                  </p>
+                </div>
+              </div>
+
+              {/* Feature 3 */}
+              <div className="flex gap-6">
+                <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-green-500/10 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold mb-2 text-white">Suivi financier automatisé</h3>
+                  <p className="text-gray-300">
+                    Calculez automatiquement vos bénéfices, frais de port, commissions Vinted.
+                    Exportez vos données pour votre comptabilité.
+                  </p>
+                </div>
+              </div>
+
+              {/* Feature 4 */}
+              <div className="flex gap-6">
+                <div className="flex-shrink-0 w-12 h-12 rounded-lg bg-green-500/10 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-xl font-semibold mb-2 text-white">Automatisation intelligente</h3>
+                  <p className="text-gray-300">
+                    Générez des étiquettes d&apos;expédition, des reçus de vente et des rapports automatiquement.
+                    Gagnez du temps sur les tâches répétitives.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Features Preview */}
+            <div className="relative lg:block">
+              <div className="relative w-full aspect-square rounded-2xl overflow-hidden border border-gray-800">
+                <div className="absolute inset-0 bg-gradient-to-br from-green-500/20 to-transparent" />
+                <Image
+                  src="/assets/img/dashboard-preview.png"
+                  alt="Dashboard Preview"
+                  width={600}
+                  height={600}
+                  className="object-cover"
+                />
+              </div>
+              {/* Stats Overlay */}
+              <div className="absolute -bottom-6 -right-6 bg-gray-900 p-6 rounded-xl border border-gray-700 shadow-xl">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center">
+                    <svg className="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-400">Croissance moyenne</p>
+                    <p className="text-2xl font-bold text-white">+127%</p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* Comment ça marche */}
-      <section className="max-w-4xl mx-auto py-20 border-t border-gray-700 text-center px-6">
-        <h2 className="text-3xl font-bold mb-10">Comment ça marche ?</h2>
-        <div className="grid sm:grid-cols-3 gap-8 text-gray-300">
-          <div>
-            <h3 className="text-5xl font-bold text-green-400 mb-2">1</h3>
-            <p>Ajoutez vos articles à votre inventaire avec leur prix d&apos;achat.</p>
-          </div>
-          <div>
-            <h3 className="text-5xl font-bold text-green-400 mb-2">2</h3>
-            <p>Enregistrez chaque vente avec son prix de revente et la date.</p>
-          </div>
-          <div>
-            <h3 className="text-5xl font-bold text-green-400 mb-2">3</h3>
-            <p>Consultez vos bénéfices et votre performance en temps réel.</p>
+      {/* Tarifs */}
+      <section id="pricing" className="min-h-screen lg:h-screen flex items-center border-t border-gray-700">
+        <div className="max-w-6xl mx-auto px-6 py-20 lg:py-0">
+          <h2 className="text-3xl font-bold text-center mb-4">Tarifs adaptés à vos besoins</h2>
+          <p className="text-gray-300 text-center mb-12 max-w-2xl mx-auto">
+            Choisissez le plan qui correspond le mieux à votre activité. Tous nos plans incluent un essai gratuit de 14 jours.
+          </p>
+          <div className="grid md:grid-cols-3 gap-8">
+            {/* Plan Gratuit */}
+            <div className="bg-gray-900 rounded-2xl p-8 border border-gray-700">
+              <h3 className="text-xl font-bold mb-2">Gratuit</h3>
+              <p className="text-gray-400 mb-4">Pour démarrer</p>
+              <div className="text-3xl font-bold mb-6">0€<span className="text-gray-400 text-base font-normal">/mois</span></div>
+              <ul className="space-y-4 mb-8">
+                <li className="flex items-center gap-2">
+                  <Check className="w-5 h-5 text-green-400" />
+                  <span>Jusqu&apos;à 50 articles</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="w-5 h-5 text-green-400" />
+                  <span>Statistiques basiques</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="w-5 h-5 text-green-400" />
+                  <span>Support par email</span>
+                </li>
+              </ul>
+              <Button className="w-full bg-gray-800 hover:bg-gray-700">Commencer</Button>
+            </div>
+
+            {/* Plan Pro */}
+            <div className="bg-gray-900 rounded-2xl p-8 border-2 border-green-500 relative">
+              <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-green-500 text-black px-4 py-1 rounded-full text-sm font-semibold">
+                Populaire
+              </div>
+              <h3 className="text-xl font-bold mb-2">Pro</h3>
+              <p className="text-gray-400 mb-4">Pour les vendeurs actifs</p>
+              <div className="text-3xl font-bold mb-6">9.99€<span className="text-gray-400 text-base font-normal">/mois</span></div>
+              <ul className="space-y-4 mb-8">
+                <li className="flex items-center gap-2">
+                  <Check className="w-5 h-5 text-green-400" />
+                  <span>Articles illimités</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="w-5 h-5 text-green-400" />
+                  <span>Statistiques avancées</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="w-5 h-5 text-green-400" />
+                  <span>Support prioritaire</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="w-5 h-5 text-green-400" />
+                  <span>Export des données</span>
+                </li>
+              </ul>
+              <Button className="w-full bg-green-500 text-black hover:bg-green-400">Commencer</Button>
+            </div>
+
+            {/* Plan Business */}
+            <div className="bg-gray-900 rounded-2xl p-8 border border-gray-700">
+              <h3 className="text-xl font-bold mb-2">Business</h3>
+              <p className="text-gray-400 mb-4">Pour les professionnels</p>
+              <div className="text-3xl font-bold mb-6">19.99€<span className="text-gray-400 text-base font-normal">/mois</span></div>
+              <ul className="space-y-4 mb-8">
+                <li className="flex items-center gap-2">
+                  <Check className="w-5 h-5 text-green-400" />
+                  <span>Tout le plan Pro</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="w-5 h-5 text-green-400" />
+                  <span>API personnalisée</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="w-5 h-5 text-green-400" />
+                  <span>Support dédié</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="w-5 h-5 text-green-400" />
+                  <span>Formation personnalisée</span>
+                </li>
+              </ul>
+              <Button className="w-full bg-gray-800 hover:bg-gray-700">Commencer</Button>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Témoignages */}
-      <section className="max-w-4xl mx-auto py-20 border-t border-gray-700 px-6">
-        <h2 className="text-3xl font-bold text-center mb-10">Ils utilisent Ratbusiness</h2>
-        <div className="grid gap-8 sm:grid-cols-2 text-sm text-gray-300">
-          <div className="bg-gray-900 p-6 rounded-xl border border-gray-700">
-            <p className="italic">&quot;Ratbusiness m&apos;a permis de suivre enfin mes bénéfices sans me prendre la tête.&quot;</p>
-            <p className="mt-4 text-right">— Julie, vendeuse pro sur Vinted</p>
-          </div>
-          <div className="bg-gray-900 p-6 rounded-xl border border-gray-700">
-            <p className="italic">&quot;J&apos;ai gagné en clarté. Les stats sont claires, je recommande.&quot;</p>
-            <p className="mt-4 text-right">— Mehdi, étudiant revendeur</p>
+      <section id="testimonials" className="min-h-screen lg:h-screen flex items-center border-t border-gray-700">
+        <div className="max-w-4xl mx-auto px-6 py-20 lg:py-0">
+          <h2 className="text-3xl font-bold text-center mb-10">Ils utilisent Ratbusiness</h2>
+          <div className="grid gap-8 sm:grid-cols-2 text-sm text-gray-300">
+            <div className="bg-gray-900 p-6 rounded-xl border border-gray-700">
+              <p className="italic">&quot;Ratbusiness m&apos;a permis de suivre enfin mes bénéfices sans me prendre la tête.&quot;</p>
+              <p className="mt-4 text-right">— Julie, vendeuse pro sur Vinted</p>
+            </div>
+            <div className="bg-gray-900 p-6 rounded-xl border border-gray-700">
+              <p className="italic">&quot;J&apos;ai gagné en clarté. Les stats sont claires, je recommande.&quot;</p>
+              <p className="mt-4 text-right">— Mehdi, étudiant revendeur</p>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* À propos */}
-      <section className="max-w-3xl mx-auto py-16 border-t border-gray-700 text-center px-6">
-        <h2 className="text-3xl font-bold mb-4">À propos</h2>
-        <p className="text-gray-300">
-          Ratbusiness est né de la volonté d&apos;aider les revendeurs à gérer leurs activités plus facilement, plus
-          intelligemment et avec plaisir. Fini les tableurs, place à une interface claire et pensée pour vous.
-        </p>
+      {/* FAQ */}
+      <section id="faq" className="min-h-screen lg:h-screen flex items-center border-t border-gray-700">
+        <div className="max-w-4xl mx-auto px-6 py-20 lg:py-0">
+          <h2 className="text-3xl font-bold text-center mb-10">Questions fréquentes</h2>
+          <div className="space-y-6">
+            <div className="bg-gray-900 p-6 rounded-xl border border-gray-700">
+              <h3 className="text-xl font-semibold mb-2">Comment fonctionne l&apos;essai gratuit ?</h3>
+              <p className="text-gray-300">Vous pouvez essayer toutes les fonctionnalités de Ratbusiness pendant 14 jours sans engagement. Aucune carte bancaire n&apos;est requise.</p>
+            </div>
+            <div className="bg-gray-900 p-6 rounded-xl border border-gray-700">
+              <h3 className="text-xl font-semibold mb-2">Est-ce que mes données sont sécurisées ?</h3>
+              <p className="text-gray-300">Oui, toutes vos données sont chiffrées et stockées de manière sécurisée. Nous respectons le RGPD et ne partageons jamais vos informations.</p>
+            </div>
+            <div className="bg-gray-900 p-6 rounded-xl border border-gray-700">
+              <h3 className="text-xl font-semibold mb-2">Puis-je annuler mon abonnement ?</h3>
+              <p className="text-gray-300">Oui, vous pouvez annuler votre abonnement à tout moment depuis votre espace client. Aucun frais supplémentaire ne sera facturé.</p>
+            </div>
+          </div>
+        </div>
       </section>
 
-      {/* Call to action final */}
-      <section className="max-w-3xl mx-auto py-20 border-t border-gray-700 text-center px-6">
-        <h2 className="text-3xl font-bold mb-4">Prêt à booster ton activité ?</h2>
-        <p className="mb-6 text-gray-300">Rejoins Ratbusiness dès maintenant et prends le contrôle de tes ventes.</p>
-        <Link href="/dashboard">
-          <Button size="lg" className="bg-green-500 text-black font-semibold hover:bg-green-400">
-            Lancer mon dashboard
-          </Button>
-        </Link>
+      {/* Contact */}
+      <section id="contact" className="min-h-screen lg:h-screen flex items-center border-t border-gray-700">
+        <div className="max-w-4xl mx-auto px-6 py-20 lg:py-0">
+          <h2 className="text-3xl font-bold text-center mb-10">Contactez-nous</h2>
+          <div className="grid md:grid-cols-2 gap-12">
+            <div>
+              <h3 className="text-xl font-semibold mb-4">Besoin d&apos;aide ?</h3>
+              <p className="text-gray-300 mb-6">
+                Notre équipe est là pour vous aider à tirer le meilleur parti de Ratbusiness.
+                N&apos;hésitez pas à nous contacter pour toute question.
+              </p>
+              <div className="space-y-4">
+                <p className="flex items-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                    <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                  </svg>
+                  support@ratbusiness.com
+                </p>
+                <p className="flex items-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                  </svg>
+                  +33 1 23 45 67 89
+                </p>
+              </div>
+            </div>
+            <form className="space-y-4">
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-1">Nom</label>
+                <input type="text" id="name" className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-green-500" />
+              </div>
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1">Email</label>
+                <input type="email" id="email" className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-green-500" />
+              </div>
+              <div>
+                <label htmlFor="message" className="block text-sm font-medium text-gray-300 mb-1">Message</label>
+                <textarea id="message" rows={4} className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:outline-none focus:border-green-500"></textarea>
+              </div>
+              <Button className="w-full bg-green-500 text-black hover:bg-green-400">Envoyer</Button>
+            </form>
+          </div>
+        </div>
       </section>
+
+      {/* Footer */}
+      <footer className="border-t border-gray-700 py-12">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="grid md:grid-cols-4 gap-8">
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Ratbusiness</h3>
+              <p className="text-gray-400">L&apos;app qui booste ton business Vinted</p>
+            </div>
+            <div>
+              <h4 className="text-sm font-semibold mb-4">Produit</h4>
+              <ul className="space-y-2 text-gray-400">
+                <li><Link href="#features">Fonctionnalités</Link></li>
+                <li><Link href="#pricing">Tarifs</Link></li>
+                <li><Link href="#testimonials">Témoignages</Link></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="text-sm font-semibold mb-4">Support</h4>
+              <ul className="space-y-2 text-gray-400">
+                <li><Link href="#faq">FAQ</Link></li>
+                <li><Link href="#contact">Contact</Link></li>
+                <li><Link href="#">Centre d&apos;aide</Link></li>
+              </ul>
+            </div>
+            <div>
+              <h4 className="text-sm font-semibold mb-4">Légal</h4>
+              <ul className="space-y-2 text-gray-400">
+                <li><Link href="#">Mentions légales</Link></li>
+                <li><Link href="#">Politique de confidentialité</Link></li>
+                <li><Link href="#">CGU</Link></li>
+              </ul>
+            </div>
+          </div>
+          <div className="mt-12 pt-8 border-t border-gray-700 text-center text-gray-400">
+            <p>&copy; {new Date().getFullYear()} Ratbusiness. Tous droits réservés.</p>
+          </div>
+        </div>
+      </footer>
     </main>
   );
 }

@@ -1,12 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Area, AreaChart, CartesianGrid, XAxis } from "recharts";
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
 import {
     Card,
     CardContent,
     CardDescription,
-    CardFooter,
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
@@ -18,7 +17,6 @@ import {
 } from "@/components/ui/chart";
 import { createClient } from "../../../utils/supabase/client";
 import { format, isSameMonth, isSameYear, subDays, isAfter } from "date-fns";
-import { Label } from "@/components/ui/label";
 
 interface ChartStats {
     date: string;
@@ -29,17 +27,16 @@ interface ChartStats {
 const chartConfig = {
     revenue: {
         label: "Chiffre d'affaires",
-        color: "lightgreen",
+        color: "var(--color-chart-1)",
     },
     profit: {
         label: "Bénéfice",
-        color: "green",
+        color: "var(--color-chart-2)",
     },
 } satisfies ChartConfig;
 
-export function SalesChart() {
+export function SalesChart({ filter }: { filter: string }) {
     const [chartData, setChartData] = useState<ChartStats[]>([]);
-    const [filter, setFilter] = useState("30days");
     const supabase = createClient();
 
     useEffect(() => {
@@ -55,7 +52,6 @@ export function SalesChart() {
                     id,
                     sale_price,
                     sale_date,
-                    status,
                     articles (
                         name,
                         unit_cost,
@@ -175,7 +171,7 @@ export function SalesChart() {
     }, [filter]);
 
     return (
-        <Card>
+        <Card className="relative">
             <CardHeader>
                 <CardTitle>Statistiques de ventes</CardTitle>
                 <CardDescription>
@@ -183,23 +179,6 @@ export function SalesChart() {
                 </CardDescription>
             </CardHeader>
             <CardContent>
-                <div className="flex justify-end mb-4">
-                    <div className="flex items-center gap-2">
-                        <Label htmlFor="filter">Période :</Label>
-                        <select
-                            id="filter"
-                            value={filter}
-                            onChange={(e) => setFilter(e.target.value)}
-                            className="border rounded px-2 py-1 text-sm text-black"
-                        >
-                            <option value="7days">7 derniers jours</option>
-                            <option value="30days">30 derniers jours</option>
-                            <option value="month">Mois en cours</option>
-                            <option value="year">Année en cours</option>
-                        </select>
-                    </div>
-                </div>
-
                 <ChartContainer
                     config={chartConfig}
                     className="w-full overflow-x-auto max-h-[420px] h-[70vh]"
@@ -218,29 +197,35 @@ export function SalesChart() {
                             axisLine={false}
                             tickMargin={8}
                         />
+                        <YAxis
+                            tickLine={false}
+                            axisLine={false}
+                            tickMargin={8}
+                            tickFormatter={(value) => `${value}€`}
+                        />
                         <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
                         <defs>
                             <linearGradient id="fillRevenue" x1="0" y1="0" x2="0" y2="1">
                                 <stop
                                     offset="5%"
-                                    stopColor="var(--color-revenue)"
+                                    stopColor="var(--color-chart-1)"
                                     stopOpacity={0.8}
                                 />
                                 <stop
                                     offset="95%"
-                                    stopColor="var(--color-revenue)"
+                                    stopColor="var(--color-chart-1)"
                                     stopOpacity={0.1}
                                 />
                             </linearGradient>
                             <linearGradient id="fillProfit" x1="0" y1="0" x2="0" y2="1">
                                 <stop
                                     offset="5%"
-                                    stopColor="var(--color-profit)"
+                                    stopColor="var(--color-chart-2)"
                                     stopOpacity={0.8}
                                 />
                                 <stop
                                     offset="95%"
-                                    stopColor="var(--color-profit)"
+                                    stopColor="var(--color-chart-2)"
                                     stopOpacity={0.1}
                                 />
                             </linearGradient>
@@ -249,29 +234,17 @@ export function SalesChart() {
                             dataKey="revenue"
                             type="monotone"
                             fill="url(#fillRevenue)"
-                            stroke="var(--color-revenue)"
-                            stackId="a"
+                            stroke="var(--color-chart-1)"
                         />
                         <Area
                             dataKey="profit"
                             type="monotone"
                             fill="url(#fillProfit)"
-                            stroke="var(--color-profit)"
-                            stackId="a"
+                            stroke="var(--color-chart-2)"
                         />
                     </AreaChart>
                 </ChartContainer>
             </CardContent>
-            <CardFooter>
-                <div className="flex w-full items-start gap-2 text-sm">
-                    <div className="grid gap-2">
-                        <div className="flex items-center gap-2 font-medium leading-none">
-                            Données filtrées par : <code>{filter}</code>
-                        </div>
-                        <div className="text-muted-foreground">Basé sur vos ventes récentes</div>
-                    </div>
-                </div>
-            </CardFooter>
         </Card>
     );
 }

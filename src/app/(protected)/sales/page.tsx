@@ -5,6 +5,8 @@ import { useEffect, useState } from "react";
 import { createClient } from "../../../../utils/supabase/client";
 import { format, subDays, startOfMonth, endOfMonth, isAfter, isBefore } from "date-fns";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import ArticleImage from "@/components/ArticleImage";
 
 type Sale = {
     id: string;
@@ -12,8 +14,10 @@ type Sale = {
     sale_date: string;
     status: string;
     articles: {
+        id: string;
         name: string;
         unit_cost: number;
+        image_url: string;
     }[];
 };
 
@@ -45,7 +49,7 @@ export default function SalesPage() {
 
     const displayedSales = filter === "bestSales" ? bestSales : filteredSales;
 
-    const totalSales = sales.reduce((acc, sale) => acc + sale.sale_price, 0);
+    const totalSales = displayedSales.reduce((acc, sale) => acc + sale.sale_price, 0);
 
     useEffect(() => {
         const fetchSales = async () => {
@@ -57,8 +61,10 @@ export default function SalesPage() {
                     sale_date,
                     status,
                     articles (
+                        id,
                         name,
-                        unit_cost
+                        unit_cost,
+                        image_url
                     )
                 `)
                 .order("sale_date", { ascending: false });
@@ -79,10 +85,30 @@ export default function SalesPage() {
         <DashboardLayout>
             <h2 className="text-2xl font-bold mb-6">Historique des ventes</h2>
             <div className="mb-4 flex space-x-2">
-                <Button onClick={() => setFilter("all")}>Toutes</Button>
-                <Button onClick={() => setFilter("last7days")}>7 derniers jours</Button>
-                <Button onClick={() => setFilter("lastMonth")}>Mois dernier</Button>
-                <Button onClick={() => setFilter("bestSales")}>Meilleures ventes</Button>
+                <Button
+                    variant={filter === "all" ? "default" : "outline"}
+                    onClick={() => setFilter("all")}
+                >
+                    Toutes
+                </Button>
+                <Button
+                    variant={filter === "last7days" ? "default" : "outline"}
+                    onClick={() => setFilter("last7days")}
+                >
+                    7 derniers jours
+                </Button>
+                <Button
+                    variant={filter === "lastMonth" ? "default" : "outline"}
+                    onClick={() => setFilter("lastMonth")}
+                >
+                    Mois dernier
+                </Button>
+                <Button
+                    variant={filter === "bestSales" ? "default" : "outline"}
+                    onClick={() => setFilter("bestSales")}
+                >
+                    Meilleures ventes
+                </Button>
             </div>
             <p>Total cumulé : {totalSales.toFixed(2)} €</p>
             {loading ? (
@@ -92,9 +118,7 @@ export default function SalesPage() {
             ) : (
                 <div className="grid gap-4 mt-4">
                     {displayedSales.map((sale) => {
-                        console.log("Sale:", sale);
                         const article = Array.isArray(sale.articles) ? sale.articles[0] : sale.articles;
-                        console.log("Article:", article);
                         const purchasePrice = article?.unit_cost || 0;
                         const benefit = sale.sale_price - purchasePrice;
                         return (
@@ -102,47 +126,57 @@ export default function SalesPage() {
                                 key={sale.id}
                                 className="border rounded-md p-4 bg-white text-black shadow-sm"
                             >
-                                <h3 className="font-semibold text-lg">{article?.name || 'Article inconnu'}</h3>
-                                <p className="text-sm text-muted-foreground">
-                                    Date : {format(new Date(sale.sale_date), "dd/MM/yyyy")}
-                                </p>
-                                <p className="text-sm">Prix d&apos;achat : {purchasePrice.toFixed(2)} €</p>
-                                <p className="text-sm">Prix de vente : {sale.sale_price.toFixed(2)} €</p>
-                                <p className={`text-sm font-medium ${benefit < 0 ? "text-red-600" : "text-green-600"}`}>
-                                    Bénéfice : {benefit.toFixed(2)} €
-                                </p>
-                                {sale.status === "returned" && (
-                                    <p className="text-sm text-orange-600 mt-2 font-medium">Vente retournée</p>
-                                )}
-                                {sale.status !== "returned" && (
-                                    <button
-                                        onClick={async () => {
-                                            const { error } = await supabase.from("sales").update({ is_returned: true }).eq("id", sale.id);
-                                            if (!error) {
-                                                setSales((prev) =>
-                                                    prev.map((s) =>
-                                                        s.id === sale.id ? { ...s, status: "returned" } : s
-                                                    )
-                                                );
-                                            } else {
-                                                alert("Erreur lors de la mise à jour : " + error.message);
-                                            }
-                                        }}
-                                        className="mt-2 text-sm text-blue-600 underline mr-4"
-                                    >
-                                        Marquer comme retour
-                                    </button>
-                                )}
-                                <button
-                                    onClick={async () => {
-                                        const { error } = await supabase.from("sales").delete().eq("id", sale.id);
-                                        if (!error) setSales((prev) => prev.filter((s) => s.id !== sale.id));
-                                        else alert("Erreur lors de la suppression : " + error.message);
-                                    }}
-                                    className="mt-2 text-sm text-red-600 underline"
-                                >
-                                    Supprimer
-                                </button>
+                                <div className="flex gap-4">
+                                    <ArticleImage url={article?.image_url} />
+                                    <div>
+                                        <Link
+                                            href={`/articles/${article?.id}/sales`}
+                                            className="font-semibold text-lg hover:underline"
+                                        >
+                                            {article?.name || 'Article inconnu'}
+                                        </Link>
+                                        <p className="text-sm text-muted-foreground">
+                                            Date : {format(new Date(sale.sale_date), "dd/MM/yyyy")}
+                                        </p>
+                                        <p className="text-sm">Prix d&apos;achat : {purchasePrice.toFixed(2)} €</p>
+                                        <p className="text-sm">Prix de vente : {sale.sale_price.toFixed(2)} €</p>
+                                        <p className={`text-sm font-medium ${benefit < 0 ? "text-red-600" : "text-green-600"}`}>
+                                            Bénéfice : {benefit.toFixed(2)} €
+                                        </p>
+                                        {sale.status === "returned" && (
+                                            <p className="text-sm text-orange-600 mt-2 font-medium">Vente retournée</p>
+                                        )}
+                                        {sale.status !== "returned" && (
+                                            <button
+                                                onClick={async () => {
+                                                    const { error } = await supabase.from("sales").update({ is_returned: true }).eq("id", sale.id);
+                                                    if (!error) {
+                                                        setSales((prev) =>
+                                                            prev.map((s) =>
+                                                                s.id === sale.id ? { ...s, status: "returned" } : s
+                                                            )
+                                                        );
+                                                    } else {
+                                                        alert("Erreur lors de la mise à jour : " + error.message);
+                                                    }
+                                                }}
+                                                className="mt-2 text-sm text-blue-600 underline mr-4"
+                                            >
+                                                Marquer comme retour
+                                            </button>
+                                        )}
+                                        <button
+                                            onClick={async () => {
+                                                const { error } = await supabase.from("sales").delete().eq("id", sale.id);
+                                                if (!error) setSales((prev) => prev.filter((s) => s.id !== sale.id));
+                                                else alert("Erreur lors de la suppression : " + error.message);
+                                            }}
+                                            className="mt-2 text-sm text-red-600 underline"
+                                        >
+                                            Supprimer
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         );
                     })}

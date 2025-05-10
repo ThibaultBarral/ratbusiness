@@ -1,14 +1,16 @@
 "use client";
 
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "../../../../utils/supabase/client";
 import { SalesChart } from "@/components/charts/SalesChart";
 import Link from "next/link";
-import { GoalWidget } from "@/components/dashboard/GoalWidget";
+import { ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { isSameMonth, isSameYear, subDays, isAfter } from "date-fns";
+import { FomoMessage } from "@/components/ui/fomo-message";
 
 interface ArticleProfit {
     id: string;
@@ -29,8 +31,21 @@ export default function DashboardPage() {
     const [averageMargin, setAverageMargin] = useState(0);
     const [topProfitableArticles, setTopProfitableArticles] = useState<ArticleProfit[]>([]);
     const [criticalStockArticles, setCriticalStockArticles] = useState<StockAlert[]>([]);
+    const [growthRate, setGrowthRate] = useState<string | null>(null);
+    const [profitGrowthRate, setProfitGrowthRate] = useState<string | null>(null);
+    const [marginGrowthRate, setMarginGrowthRate] = useState<string | null>(null);
+    const [weeklyProfit, setWeeklyProfit] = useState<number>(0);
+    const [projectedRevenue, setProjectedRevenue] = useState<number>(0);
     const supabase = createClient();
     const router = useRouter();
+
+    const filterOptions = [
+        { value: "7days", label: "7 derniers jours" },
+        { value: "30days", label: "30 derniers jours" },
+        { value: "month", label: "Mois en cours" },
+        { value: "year", label: "Année en cours" },
+    ];
+    const [filter, setFilter] = useState<"7days" | "30days" | "month" | "year">("30days");
 
     useEffect(() => {
         const checkAuth = async () => {
@@ -43,19 +58,13 @@ export default function DashboardPage() {
         checkAuth();
     }, [supabase, router]);
 
-    const [showReport, setShowReport] = useState(() => {
+    const [showReport] = useState(() => {
         if (typeof window !== "undefined") {
             const saved = localStorage.getItem("showReport");
             return saved !== null ? JSON.parse(saved) : true;
         }
         return true;
     });
-
-    const [monthlyReport, setMonthlyReport] = useState<{
-        bestDay: string;
-        topProduct: string;
-        growthRate: string;
-    } | null>(null);
 
     useEffect(() => {
         if (typeof window !== "undefined") {
@@ -83,7 +92,80 @@ export default function DashboardPage() {
             if (salesError) console.error("[ERROR] Sales fetch:", salesError);
             if (!articles || !sales) return;
 
-            const salesByArticle = sales.reduce((acc: Record<string, typeof sales>, sale) => {
+            // Filtrage selon la période pour les métriques (hors stock)
+            const today = new Date();
+            let filteredSales: typeof sales = [];
+            let previousFilteredSales: typeof sales = [];
+
+            if (filter === "7days") {
+                filteredSales = sales.filter((sale) => {
+                    const saleDate = new Date(sale.sale_date);
+                    return isAfter(saleDate, subDays(today, 7));
+                });
+                previousFilteredSales = sales.filter((sale) => {
+                    const saleDate = new Date(sale.sale_date);
+                    return isAfter(saleDate, subDays(today, 14)) && isAfter(subDays(today, 7), saleDate);
+                });
+            } else if (filter === "30days") {
+                filteredSales = sales.filter((sale) => {
+                    const saleDate = new Date(sale.sale_date);
+                    return isAfter(saleDate, subDays(today, 30));
+                });
+                previousFilteredSales = sales.filter((sale) => {
+                    const saleDate = new Date(sale.sale_date);
+                    return isAfter(saleDate, subDays(today, 60)) && isAfter(subDays(today, 30), saleDate);
+                });
+            } else if (filter === "month") {
+                filteredSales = sales.filter((sale) => isSameMonth(new Date(sale.sale_date), today));
+                previousFilteredSales = sales.filter((sale) => {
+                    const saleDate = new Date(sale.sale_date);
+                    const prevMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+                    return isSameMonth(saleDate, prevMonth);
+                });
+            } else if (filter === "year") {
+                filteredSales = sales.filter((sale) => isSameYear(new Date(sale.sale_date), today));
+                previousFilteredSales = sales.filter((sale) => {
+                    const saleDate = new Date(sale.sale_date);
+                    const prevYear = new Date(today.getFullYear() - 1, today.getMonth(), today.getDate());
+                    return isSameYear(saleDate, prevYear);
+                });
+            } else {
+                filteredSales = sales;
+                previousFilteredSales = [];
+            }
+
+            // Calcul du bénéfice de la semaine en cours
+            let profitThisWeek = 0;
+            for (const sale of filteredSales) {
+                const article = articles.find((a) => a.id === sale.article_id);
+                if (!article) continue;
+                const unitCost = article.unit_cost ?? 0;
+                if (sale.sale_price !== null && unitCost !== null) {
+                    profitThisWeek += (sale.sale_price - unitCost);
+                }
+            }
+            setWeeklyProfit(profitThisWeek);
+
+            // Projection de CA mensuel
+            const currentMonthSales = sales.filter((sale) => isSameMonth(new Date(sale.sale_date), today));
+            const revenueSoFar = currentMonthSales.reduce((sum, sale) => sum + sale.sale_price, 0);
+            const daysPassed = today.getDate();
+            const totalDays = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+            const projectedRevenue = (revenueSoFar / daysPassed) * totalDays;
+            setProjectedRevenue(projectedRevenue);
+
+            // Stock restant (quantity) doit être global, pas filtré
+            let stock = 0;
+            for (const article of articles) {
+                const quantity = article.quantity ?? 0;
+                const salesForArticle = sales.filter(sale => sale.article_id === article.id);
+                const soldQty = salesForArticle.length;
+                const remainingStock = quantity - soldQty;
+                stock += remainingStock;
+            }
+
+            // Calcul des métriques filtrées
+            const salesByArticle = filteredSales.reduce((acc: Record<string, typeof sales>, sale) => {
                 if (!acc[sale.article_id]) acc[sale.article_id] = [];
                 acc[sale.article_id].push(sale);
                 return acc;
@@ -91,7 +173,6 @@ export default function DashboardPage() {
 
             let revenue = 0;
             let profit = 0;
-            let stock = 0;
             let totalMarginPercent = 0;
             let marginCount = 0;
             const profitByArticle: ArticleProfit[] = [];
@@ -99,13 +180,7 @@ export default function DashboardPage() {
 
             for (const article of articles) {
                 const unitCost = article.unit_cost ?? 0;
-                const quantity = article.quantity ?? 0;
                 const salesForArticle = salesByArticle[article.id] || [];
-
-                const soldQty = salesForArticle.length;
-                const remainingStock = quantity - soldQty;
-
-                stock += remainingStock;
 
                 let articleProfit = 0;
                 for (const sale of salesForArticle) {
@@ -127,6 +202,11 @@ export default function DashboardPage() {
                     totalProfit: articleProfit,
                 });
 
+                // Stock critique (toujours global)
+                const quantity = article.quantity ?? 0;
+                const salesForArticleAll = sales.filter(sale => sale.article_id === article.id);
+                const soldQtyAll = salesForArticleAll.length;
+                const remainingStock = quantity - soldQtyAll;
                 if (remainingStock < 3) {
                     criticalStock.push({
                         id: article.id,
@@ -148,109 +228,96 @@ export default function DashboardPage() {
             setTopProfitableArticles(top5);
             setCriticalStockArticles(criticalStock);
 
-            // Rapport mensuel
-            const thisMonth = new Date().getMonth();
-            const lastMonth = (thisMonth - 1 + 12) % 12;
+            // Calcul des indicateurs de croissance selon la période sélectionnée
+            // Chiffre d'affaires
+            const prevRevenue = previousFilteredSales.reduce((acc, sale) => acc + (sale.sale_price ?? 0), 0) || 1;
+            const growthRate = (((revenue - prevRevenue) / prevRevenue) * 100).toFixed(1);
 
-            const salesByMonth = sales.reduce((acc, sale) => {
-                const month = new Date(sale.sale_date).getMonth();
-                acc[month] = (acc[month] || 0) + sale.sale_price;
-                return acc;
-            }, {} as Record<number, number>);
+            // Bénéfice
+            const prevProfit = previousFilteredSales.reduce((acc, sale) => {
+                const article = articles.find((a) => a.id === sale.article_id);
+                if (!article) return acc;
+                const unitCost = article.unit_cost ?? 0;
+                return acc + (sale.sale_price - unitCost);
+            }, 0) || 1;
+            const profitGrowth = (((profit - prevProfit) / prevProfit) * 100).toFixed(1);
 
-            const currentMonthCA = salesByMonth[thisMonth] || 0;
-            const previousMonthCA = salesByMonth[lastMonth] || 1;
-            const growthRate = (((currentMonthCA - previousMonthCA) / previousMonthCA) * 100).toFixed(1);
-
-            // Jour le plus actif
-            const daysMap = sales.reduce((acc, sale) => {
-                const day = new Date(sale.sale_date).toLocaleDateString("fr-FR", { weekday: "long" });
-                acc[day] = (acc[day] || 0) + 1;
-                return acc;
-            }, {} as Record<string, number>);
-
-            const bestDay = Object.entries(daysMap).sort((a, b) => b[1] - a[1])[0]?.[0] || "-";
-
-            // Article le plus rentable
-            const profitMap = new Map<string, { name: string; totalProfit: number }>();
-            for (const sale of sales) {
+            // Marge moyenne
+            let prevTotalMarginPercent = 0;
+            let prevMarginCount = 0;
+            for (const sale of previousFilteredSales) {
                 const article = articles.find((a) => a.id === sale.article_id);
                 if (!article) continue;
-                const profit = sale.sale_price - article.unit_cost;
-                if (!profitMap.has(article.name)) {
-                    profitMap.set(article.name, { name: article.name, totalProfit: 0 });
+                const unitCost = article.unit_cost ?? 0;
+                if (unitCost > 0) {
+                    prevTotalMarginPercent += ((sale.sale_price - unitCost) / unitCost) * 100;
+                    prevMarginCount++;
                 }
-                profitMap.get(article.name)!.totalProfit += profit;
             }
-            const topProduct = Array.from(profitMap.values()).sort((a, b) => b.totalProfit - a.totalProfit)[0]?.name || "-";
+            const prevAverageMarginPercent = prevMarginCount > 0 ? prevTotalMarginPercent / prevMarginCount : 1;
+            const marginGrowth = (((averageMarginPercent - prevAverageMarginPercent) / prevAverageMarginPercent) * 100).toFixed(1);
 
-            setMonthlyReport({
-                bestDay,
-                topProduct,
-                growthRate,
-            });
+            setGrowthRate(growthRate);
+            setProfitGrowthRate(profitGrowth);
+            setMarginGrowthRate(marginGrowth);
         };
 
         fetchData();
-    }, []);
+    }, [filter]);
 
     return (
         <DashboardLayout>
             <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold">Tableau de bord</h2>
+                <div>
+                    <h2 className="text-2xl font-bold">Tableau de bord</h2>
+                    <FomoMessage
+                        profit={weeklyProfit}
+                        filter={filter}
+                        growthRate={growthRate}
+                        profitGrowthRate={profitGrowthRate}
+                        marginGrowthRate={marginGrowthRate}
+                    />
+                    {/* Projection du chiffre d'affaires ce mois-ci */}
+                    {filter === "month" && projectedRevenue > 0 && (
+                        <div className="mt-3 p-3 rounded-md bg-indigo-50 text-indigo-800 text-sm font-medium border border-indigo-300 shadow-sm">
+                            🔮 Projection du chiffre d&apos;affaires ce mois-ci : {projectedRevenue.toFixed(2)} €
+                        </div>
+                    )}
+                </div>
                 <Link href="/articles">
                     <Button variant="default">📤 Mettre en vente un article</Button>
                 </Link>
             </div>
 
-            {monthlyReport && (
-                <Card className="mb-6 col-span-full relative">
-                    <CardHeader>
-                        <CardTitle>📊 Rapport mensuel</CardTitle>
-                        <CardDescription className="text-sm text-muted-foreground">
-                            Un résumé de vos performances pour ce mois
-                        </CardDescription>
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setShowReport((prev: boolean) => !prev)}
-                            className="text-xs absolute top-4 right-4"
-                        >
-                            {showReport ? "Masquer" : "Afficher"}
-                        </Button>
-                    </CardHeader>
-
-                    {showReport && (
-                        <CardContent className="text-sm text-muted-foreground space-y-2">
-                            <p>
-                                📅 Jour le plus actif :{" "}
-                                <span className="text-foreground font-medium">
-                                    {monthlyReport.bestDay}
-                                </span>
-                            </p>
-                            <p>
-                                💰 Article le plus rentable :{" "}
-                                <span className="text-foreground font-medium">
-                                    {monthlyReport.topProduct}
-                                </span>
-                            </p>
-                            <p>
-                                📈 Progression CA vs mois dernier :{" "}
-                                <span className="text-foreground font-medium">
-                                    {monthlyReport.growthRate}%
-                                </span>
-                            </p>
-                        </CardContent>
-                    )}
-                </Card>
-            )}
-
-            <GoalWidget />
+            {/* Filtres de période */}
+            <div className="flex flex-wrap gap-2 items-center mb-6">
+                <span className="font-medium">Période :</span>
+                {filterOptions.map((option) => (
+                    <Button
+                        key={option.value}
+                        type="button"
+                        variant={filter === option.value ? "default" : "outline"}
+                        onClick={() => setFilter(option.value as "7days" | "30days" | "month" | "year")}
+                    >
+                        {option.label}
+                    </Button>
+                ))}
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <Card>
-                    <CardHeader>
+                    <CardHeader className="flex flex-row items-center justify-between">
                         <CardTitle>Chiffre d&apos;affaires</CardTitle>
+                        {growthRate && (
+                            <div className={`flex items-center gap-1 text-xs font-medium rounded px-2 py-1 ml-auto w-fit ${parseFloat(growthRate) >= 0 ? "text-green-600 bg-green-50" : "text-red-600 bg-red-50"}`}>
+                                {parseFloat(growthRate) >= 0 ? (
+                                    <ArrowUpRight className="w-3 h-3" />
+                                ) : (
+                                    <ArrowDownRight className="w-3 h-3" />
+                                )}
+                                {parseFloat(growthRate) >= 0 ? "+" : ""}{growthRate}%
+                            </div>
+                        )}
                     </CardHeader>
                     <CardContent>
                         <p className="text-2xl font-bold">€{totalRevenue.toFixed(2)}</p>
@@ -258,11 +325,40 @@ export default function DashboardPage() {
                 </Card>
 
                 <Card>
-                    <CardHeader>
+                    <CardHeader className="flex flex-row items-center justify-between">
                         <CardTitle>Bénéfice total</CardTitle>
+                        {profitGrowthRate && (
+                            <div className={`flex items-center gap-1 text-xs font-medium rounded px-2 py-1 ml-auto w-fit ${parseFloat(profitGrowthRate) >= 0 ? "text-green-600 bg-green-50" : "text-red-600 bg-red-50"}`}>
+                                {parseFloat(profitGrowthRate) >= 0 ? (
+                                    <ArrowUpRight className="w-3 h-3" />
+                                ) : (
+                                    <ArrowDownRight className="w-3 h-3" />
+                                )}
+                                {parseFloat(profitGrowthRate) >= 0 ? "+" : ""}{profitGrowthRate}%
+                            </div>
+                        )}
                     </CardHeader>
                     <CardContent>
                         <p className="text-2xl font-bold">€{totalProfit.toFixed(2)}</p>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between">
+                        <CardTitle>Marge moyenne</CardTitle>
+                        {marginGrowthRate && (
+                            <div className={`flex items-center gap-1 text-xs font-medium rounded px-2 py-1 ml-auto w-fit ${parseFloat(marginGrowthRate) >= 0 ? "text-green-600 bg-green-50" : "text-red-600 bg-red-50"}`}>
+                                {parseFloat(marginGrowthRate) >= 0 ? (
+                                    <ArrowUpRight className="w-3 h-3" />
+                                ) : (
+                                    <ArrowDownRight className="w-3 h-3" />
+                                )}
+                                {parseFloat(marginGrowthRate) >= 0 ? "+" : ""}{marginGrowthRate}%
+                            </div>
+                        )}
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-2xl font-bold">{(1 + averageMargin / 100).toFixed(1)}x</p>
                     </CardContent>
                 </Card>
 
@@ -274,19 +370,10 @@ export default function DashboardPage() {
                         <p className="text-2xl font-bold">{totalStock}</p>
                     </CardContent>
                 </Card>
-
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Marge moyenne</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <p className="text-2xl font-bold">{(1 + averageMargin / 100).toFixed(1)}x</p>
-                    </CardContent>
-                </Card>
             </div>
 
             <div className="mt-8">
-                <SalesChart />
+                <SalesChart filter={filter} />
             </div>
 
             <div className="mt-10 grid gap-6 lg:grid-cols-2">
@@ -298,7 +385,9 @@ export default function DashboardPage() {
                         <ul className="list-disc list-inside text-sm">
                             {topProfitableArticles.map((article) => (
                                 <li key={article.id}>
-                                    {article.name} — <strong>{article.totalProfit.toFixed(2)} €</strong>
+                                    <Link href={`/articles/${article.id}/sales`} className="hover:underline">
+                                        {article.name} — <strong>{article.totalProfit.toFixed(2)} €</strong>
+                                    </Link>
                                 </li>
                             ))}
                         </ul>
@@ -316,7 +405,9 @@ export default function DashboardPage() {
                             <ul className="list-disc list-inside text-sm text-red-600">
                                 {criticalStockArticles.map((article) => (
                                     <li key={article.id}>
-                                        {article.name} — <strong>{article.remaining}</strong> restant(s)
+                                        <Link href={`/articles/${article.id}/sales`} className="hover:underline">
+                                            {article.name} — <strong>{article.remaining}</strong> restant(s)
+                                        </Link>
                                     </li>
                                 ))}
                             </ul>

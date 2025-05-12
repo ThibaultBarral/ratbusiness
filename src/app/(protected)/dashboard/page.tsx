@@ -12,6 +12,18 @@ import { ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { isSameMonth, isSameYear, subDays, isAfter } from "date-fns";
 import { FomoMessage } from "@/components/ui/fomo-message";
 
+interface LogisticsItem {
+    id: string;
+    user_id: string;
+    name: string;
+    unit_price: number;
+    quantity: number;
+    used_per_sale: number;
+    created_at: string;
+    purchase_date: string;
+    purchase_link?: string;
+}
+
 interface ArticleProfit {
     id: string;
     name: string;
@@ -36,6 +48,7 @@ export default function DashboardPage() {
     const [marginGrowthRate, setMarginGrowthRate] = useState<string | null>(null);
     const [weeklyProfit, setWeeklyProfit] = useState<number>(0);
     const [projectedRevenue, setProjectedRevenue] = useState<number>(0);
+    const [logisticsCost, setLogisticsCost] = useState(0);
     const supabase = createClient();
     const router = useRouter();
 
@@ -228,6 +241,28 @@ export default function DashboardPage() {
             setTopProfitableArticles(top5);
             setCriticalStockArticles(criticalStock);
 
+            // === Récupération items logistiques et calcul coût logistique (addition simple des unit_price) ===
+            const { data: logisticsItems } = await supabase
+                .from("logistics_items")
+                .select("*")
+                .eq("user_id", user.id);
+
+            const logisticsCost =
+                logisticsItems?.reduce((acc: number, item: LogisticsItem) => {
+                    if (!item.purchase_date) return acc;
+
+                    const purchaseDate = new Date(item.purchase_date);
+                    const isInPeriod =
+                        (filter === "7days" && isAfter(purchaseDate, subDays(today, 7))) ||
+                        (filter === "30days" && isAfter(purchaseDate, subDays(today, 30))) ||
+                        (filter === "month" && isSameMonth(purchaseDate, today)) ||
+                        (filter === "year" && isSameYear(purchaseDate, today));
+
+                    return isInPeriod ? acc + (item.unit_price ?? 0) : acc;
+                }, 0) || 0;
+            setLogisticsCost(logisticsCost);
+            // === Fin logistique ===
+
             // Calcul des indicateurs de croissance selon la période sélectionnée
             // Chiffre d'affaires
             const prevRevenue = previousFilteredSales.reduce((acc, sale) => acc + (sale.sale_price ?? 0), 0) || 1;
@@ -304,7 +339,7 @@ export default function DashboardPage() {
                 ))}
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between">
                         <CardTitle>Chiffre d&apos;affaires</CardTitle>
@@ -368,6 +403,18 @@ export default function DashboardPage() {
                     </CardHeader>
                     <CardContent>
                         <p className="text-2xl font-bold">{totalStock}</p>
+                    </CardContent>
+                </Card>
+
+                {/* Nouvelle carte Bénéfice net */}
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between">
+                        <CardTitle>
+                            Bénéfice net <span className="text-xs opacity-50">(hors log.)</span>
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-2xl font-bold">€{(totalProfit - logisticsCost).toFixed(2)}</p>
                     </CardContent>
                 </Card>
             </div>

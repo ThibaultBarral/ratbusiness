@@ -484,9 +484,7 @@ export default function StatisticsPage() {
                                             return (
                                                 <Card key={sale.id} className="p-4">
                                                     <div className="flex items-start gap-4">
-                                                        <div className="w-20 h-20 relative">
-                                                            <ArticleImage url={sale.image_url} />
-                                                        </div>
+                                                        <ArticleImage className="w-20 h-20" url={sale.image_url} />
                                                         <div className="flex-1">
                                                             <h4 className="font-medium mb-2">{sale.name}</h4>
                                                             <div className="grid grid-cols-2 gap-2 text-sm">

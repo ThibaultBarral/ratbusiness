@@ -10,7 +10,7 @@ import {
     LayoutSidebar,
 } from "@/components/ui/layout";
 import { Button } from "@/components/ui/button";
-import { Home, Package, ShoppingCart, BarChart2, LogOut, Settings, Book, Menu, Bell, CreditCard, ChevronUp, Gift, Share2 } from "lucide-react";
+import { Home, Package, ShoppingCart, BarChart2, LogOut, Settings, Book, Menu, Bell, CreditCard, ChevronUp, Gift, Share2, Truck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { createClient } from "../../../utils/supabase/client";
 import {
@@ -113,6 +113,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                         }`}
                                 >
                                     <ShoppingCart className="w-4 h-4 mr-2" /> Ventes
+                                </Button>
+                            </Link>
+                            <Link href="/logistics">
+                                <Button
+                                    variant="ghost"
+                                    className={`w-full justify-start text-sm font-medium hover:bg-accent hover:text-accent-foreground transition ${pathname === "/logistics" ? "bg-accent text-accent-foreground" : ""
+                                        }`}
+                                >
+                                    <Truck className="w-4 h-4 mr-2" /> Logistique
                                 </Button>
                             </Link>
                             <Link href="/statistics">

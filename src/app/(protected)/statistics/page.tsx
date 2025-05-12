@@ -17,6 +17,18 @@ import Link from "next/link";
 import { format } from "date-fns";
 import ArticleImage from "@/components/ArticleImage";
 
+interface LogisticsItem {
+    id: string;
+    user_id: string;
+    name: string;
+    unit_price: number;
+    quantity: number;
+    used_per_sale: number;
+    created_at: string;
+    purchase_date: string;
+    purchase_link?: string;
+}
+
 export default function StatisticsPage() {
     const supabase = createClient();
 
@@ -39,6 +51,7 @@ export default function StatisticsPage() {
         { id: string; name: string; remaining: number }[]
     >([]);
     const [averageSaleTime, setAverageSaleTime] = useState<number | null>(null);
+    const [logisticsCost, setLogisticsCost] = useState(0);
 
     const [filteredStats, setFilteredStats] = useState<{ revenue: number; profit: number } | null>(null);
     const [filteredSales, setFilteredSales] = useState<Array<{
@@ -67,6 +80,16 @@ export default function StatisticsPage() {
                 .eq("article.user_id", user.id);
 
             if (!sales) return;
+
+            const { data: logisticsItems } = await supabase
+                .from("logistics_items")
+                .select("*")
+                .eq("user_id", user.id);
+
+            const logisticsCost = logisticsItems?.reduce((acc: number, item: LogisticsItem) => {
+                return acc + (item.unit_price ?? 0);
+            }, 0) || 0;
+            setLogisticsCost(logisticsCost);
 
             const { data: articles } = await supabase
                 .from("articles")
@@ -336,9 +359,16 @@ export default function StatisticsPage() {
                                 </Card>
 
                                 <Card className="shadow-sm">
-                                    <CardHeader><CardTitle>Bénéfice net</CardTitle></CardHeader>
+                                    <CardHeader><CardTitle>Bénéfice brut</CardTitle></CardHeader>
                                     <CardContent>
                                         <p className="text-2xl font-bold">{overview?.profit.toFixed(2) ?? "0.00"} €</p>
+                                    </CardContent>
+                                </Card>
+
+                                <Card className="shadow-sm">
+                                    <CardHeader><CardTitle>Bénéfice net <span className="text-xs opacity-50">(hors log.)</span></CardTitle></CardHeader>
+                                    <CardContent>
+                                        <p className="text-2xl font-bold">{(overview?.profit ? (overview.profit - logisticsCost).toFixed(2) : "0.00")} €</p>
                                     </CardContent>
                                 </Card>
 

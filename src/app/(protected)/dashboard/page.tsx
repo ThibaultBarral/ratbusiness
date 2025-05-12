@@ -39,7 +39,7 @@ interface StockAlert {
 export default function DashboardPage() {
     const [totalRevenue, setTotalRevenue] = useState(0);
     const [totalProfit, setTotalProfit] = useState(0);
-    const [totalStock, setTotalStock] = useState(0);
+    const [, setTotalStock] = useState(0);
     const [averageMargin, setAverageMargin] = useState(0);
     const [topProfitableArticles, setTopProfitableArticles] = useState<ArticleProfit[]>([]);
     const [criticalStockArticles, setCriticalStockArticles] = useState<StockAlert[]>([]);
@@ -339,7 +339,7 @@ export default function DashboardPage() {
                 ))}
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between">
                         <CardTitle>Chiffre d&apos;affaires</CardTitle>
@@ -397,14 +397,14 @@ export default function DashboardPage() {
                     </CardContent>
                 </Card>
 
-                <Card>
+                {/* <Card>
                     <CardHeader>
                         <CardTitle>Stock restant</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <p className="text-2xl font-bold">{totalStock}</p>
                     </CardContent>
-                </Card>
+                </Card> */}
 
                 {/* Nouvelle carte Bénéfice net */}
                 <Card>

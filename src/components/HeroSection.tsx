@@ -3,8 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { createClient } from "../../utils/supabase/client";
+import { Button } from "@/components/ui/button";
 
 const navItems = [
     {
@@ -52,14 +51,14 @@ const Navbar = () => {
                                 height={40}
                                 className="rounded-full"
                             />
-                            <span className="text-lg text-gray-300">Ratbusiness</span>
+                            <span className="text-lg text-white">Ratbusiness</span>
                         </Link>
                     </div>
                     <div className={`
             fixed inset-x-0 h-[100dvh] lg:h-max top-0 lg:opacity-100 left-0 bg-[#0f1c16] lg:!bg-transparent py-32 lg:py-0 px-5 sm:px-10 md:px-12 lg:px-0 w-full lg:top-0 lg:relative lg:flex lg:justify-between duration-300 ease-linear
             ${openNavbar ? "" : "-translate-y-10 opacity-0 invisible lg:visible lg:translate-y-0"}
           `}>
-                        <ul className="flex flex-col lg:flex-row gap-6 lg:items-center text-gray-300 lg:w-full lg:pl-10">
+                        <ul className="flex flex-col lg:flex-row gap-6 lg:items-center text-white lg:w-full lg:pl-10">
                             {navItems.map(navItem => (
                                 <li key={navItem.id}>
                                     <Link href={navItem.link} className="relative py-2.5 duration-300 ease-linear hover:text-green-400">
@@ -69,12 +68,16 @@ const Navbar = () => {
                             ))}
                         </ul>
                         <div className="flex flex-col sm:flex-row sm:items-center gap-4 lg:min-w-max mt-10 lg:mt-0">
-                            <Link href="/login" className="h-10 flex items-center justify-center w-full sm:w-max rounded-full px-5 border border-gray-700 text-gray-300 hover:text-green-400">
-                                Login
-                            </Link>
-                            <Link href="/dashboard" className="h-10 flex items-center justify-center w-full sm:w-max rounded-full px-5 bg-green-500 text-black hover:bg-green-400">
-                                Sign-up
-                            </Link>
+                            <Button asChild variant="outline" size="lg" className="w-full sm:w-max text-primary">
+                                <Link href="/login">
+                                    Se connecter
+                                </Link>
+                            </Button>
+                            <Button asChild size="lg" className="w-full sm:w-max">
+                                <Link href="/dashboard">
+                                    Créer un compte
+                                </Link>
+                            </Button>
                         </div>
                     </div>
                     <div className="flex items-center lg:hidden">
@@ -97,20 +100,8 @@ const Navbar = () => {
 };
 
 export default function HeroSection() {
-    const router = useRouter();
-    const [loading, setLoading] = useState(false);
-    const supabase = createClient();
+    const [] = useState(false);
 
-    const handleClick = async () => {
-        setLoading(true);
-        const { data } = await supabase.auth.getUser();
-
-        if (data.user) {
-            router.push('/dashboard');
-        } else {
-            router.push('/login');
-        }
-    };
 
     return (
         <>
@@ -120,7 +111,7 @@ export default function HeroSection() {
                 <div className="w-full h-full flex items-center relative">
                     <div className="absolute top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 w-2/5 aspect-[2/0.5] bg-gradient-to-br from-green-500 to-green-400 rounded-full opacity-50 blur-2xl" />
                     <div className="min-h-max relative mx-auto pt-32 lg:pt-0 lg:max-w-7xl w-full px-5 sm:px-10 md:px-12 lg:px-5 text-center space-y-10">
-                        <Link href="#" className="flex items-center gap-x-2 text-gray-300 mx-auto w-max px-2 pr-1 py-1 rounded-full bg-gray-800 border border-gray-700">
+                        <Link href="/login" className="flex items-center gap-x-2 text-gray-300 mx-auto w-max px-2 pr-1 py-1 rounded-full bg-gray-800 border border-gray-700">
                             Ratbusiness v1.0 est disponible
                             <span className="px-1 rounded-full bg-gray-700">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-5 h-5">
@@ -136,7 +127,7 @@ export default function HeroSection() {
                             <br className="hidden sm:block" />
                             Simple. Rapide. Efficace.
                         </p>
-                        <div className="flex sm:flex-row flex-col gap-5 w-full mx-auto max-w-lg">
+                        {/* <div className="flex sm:flex-row flex-col gap-5 w-full mx-auto max-w-lg">
                             <form action="#" className="py-1 pl-6 w-full pr-1 flex gap-3 items-center text-gray-300 shadow-lg shadow-gray-900/20
               border border-gray-700 bg-gray-800 rounded-full ease-linear focus-within:bg-gray-900 focus-within:border-green-500">
                                 <input type="email" name="" id="" placeholder="ton@email.com" className="w-full py-3 outline-none bg-transparent" />
@@ -152,7 +143,7 @@ export default function HeroSection() {
                                     </span>
                                 </button>
                             </form>
-                        </div>
+                        </div> */}
                     </div>
                 </div>
             </section>

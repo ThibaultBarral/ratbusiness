@@ -82,7 +82,7 @@ export default function HomePage() {
                 <div>
                   <h3 className="text-xl font-semibold mb-2 text-white">Automatisation intelligente</h3>
                   <p className="text-gray-300">
-                    Générez des étiquettes d&apos;expédition, des reçus de vente et des rapports automatiquement.
+                    Générez des rapports automatiquement.
                     Gagnez du temps sur les tâches répétitives.
                   </p>
                 </div>
@@ -126,21 +126,30 @@ export default function HomePage() {
           <h2 className="text-3xl font-bold text-center mb-4">Tarifs adaptés à vos besoins</h2>
           <p className="text-gray-300 text-center mb-12 max-w-2xl mx-auto">
             Choisissez le plan qui correspond le mieux à votre activité. Tous nos plans incluent un essai gratuit de 14 jours.
+            Économisez 20% avec la facturation annuelle.
           </p>
           <div className="grid md:grid-cols-3 gap-8">
-            {/* Plan Gratuit */}
+            {/* Plan Starter */}
             <div className="bg-gray-900 rounded-2xl p-8 border border-gray-700">
-              <h3 className="text-xl font-bold mb-2">Gratuit</h3>
+              <h3 className="text-xl font-bold mb-2">Starter</h3>
               <p className="text-gray-400 mb-4">Pour démarrer</p>
-              <div className="text-3xl font-bold mb-6">0€<span className="text-gray-400 text-base font-normal">/mois</span></div>
+              <div className="text-3xl font-bold mb-6">
+                9€<span className="text-gray-400 text-base font-normal">/mois</span>
+                <span className="text-sm text-green-400 ml-2">(annuel)</span>
+              </div>
+              <div className="text-sm text-gray-400 mb-6">ou 11€/mois (mensuel)</div>
               <ul className="space-y-4 mb-8">
                 <li className="flex items-center gap-2">
                   <Check className="w-5 h-5 text-green-400" />
-                  <span>Jusqu&apos;à 50 articles</span>
+                  <span>Jusqu&apos;à 20 articles</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <Check className="w-5 h-5 text-green-400" />
-                  <span>Statistiques basiques</span>
+                  <span>Calcul du bénéfice</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="w-5 h-5 text-green-400" />
+                  <span>Stats basiques</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <Check className="w-5 h-5 text-green-400" />
@@ -157,7 +166,11 @@ export default function HomePage() {
               </div>
               <h3 className="text-xl font-bold mb-2">Pro</h3>
               <p className="text-gray-400 mb-4">Pour les vendeurs actifs</p>
-              <div className="text-3xl font-bold mb-6">9.99€<span className="text-gray-400 text-base font-normal">/mois</span></div>
+              <div className="text-3xl font-bold mb-6">
+                19€<span className="text-gray-400 text-base font-normal">/mois</span>
+                <span className="text-sm text-green-400 ml-2">(annuel)</span>
+              </div>
+              <div className="text-sm text-gray-400 mb-6">ou 24€/mois (mensuel)</div>
               <ul className="space-y-4 mb-8">
                 <li className="flex items-center gap-2">
                   <Check className="w-5 h-5 text-green-400" />
@@ -165,15 +178,15 @@ export default function HomePage() {
                 </li>
                 <li className="flex items-center gap-2">
                   <Check className="w-5 h-5 text-green-400" />
-                  <span>Statistiques avancées</span>
+                  <span>Export CSV</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="w-5 h-5 text-green-400" />
+                  <span>Alertes de stock</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <Check className="w-5 h-5 text-green-400" />
                   <span>Support prioritaire</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <Check className="w-5 h-5 text-green-400" />
-                  <span>Export des données</span>
                 </li>
               </ul>
               <Button className="w-full bg-green-500 text-black hover:bg-green-400">Commencer</Button>
@@ -183,23 +196,27 @@ export default function HomePage() {
             <div className="bg-gray-900 rounded-2xl p-8 border border-gray-700">
               <h3 className="text-xl font-bold mb-2">Business</h3>
               <p className="text-gray-400 mb-4">Pour les professionnels</p>
-              <div className="text-3xl font-bold mb-6">19.99€<span className="text-gray-400 text-base font-normal">/mois</span></div>
+              <div className="text-3xl font-bold mb-6">
+                39€<span className="text-gray-400 text-base font-normal">/mois</span>
+                <span className="text-sm text-green-400 ml-2">(annuel)</span>
+              </div>
+              <div className="text-sm text-gray-400 mb-6">ou 49€/mois (mensuel)</div>
               <ul className="space-y-4 mb-8">
                 <li className="flex items-center gap-2">
                   <Check className="w-5 h-5 text-green-400" />
-                  <span>Tout le plan Pro</span>
+                  <span>Assistant IA</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <Check className="w-5 h-5 text-green-400" />
-                  <span>API personnalisée</span>
+                  <span>Support prioritaire</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <Check className="w-5 h-5 text-green-400" />
-                  <span>Support dédié</span>
+                  <span>Multi-utilisateur</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <Check className="w-5 h-5 text-green-400" />
-                  <span>Formation personnalisée</span>
+                  <span>API & Webhooks</span>
                 </li>
               </ul>
               <Button className="w-full bg-gray-800 hover:bg-gray-700">Commencer</Button>

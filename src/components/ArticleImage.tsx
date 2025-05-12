@@ -9,7 +9,7 @@ interface ArticleImageProps {
     className?: string;
 }
 
-export default function ArticleImage({ url, className = "w-24 h-24 object-cover rounded-md" }: ArticleImageProps) {
+export default function ArticleImage({ url, className = "w-24 h-24 object-cover relative rounded-md" }: ArticleImageProps) {
     const supabase = createClient();
     const [signedUrl, setSignedUrl] = useState<string>("");
 
@@ -41,8 +41,7 @@ export default function ArticleImage({ url, className = "w-24 h-24 object-cover 
                 alt="Article"
                 className="object-cover rounded-md"
                 unoptimized // Pour les URLs signées
-                width={100}
-                height={100}
+                fill
             />
         </div>
     );

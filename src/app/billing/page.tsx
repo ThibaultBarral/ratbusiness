@@ -75,7 +75,7 @@ const trustBadges = [
     { icon: StarIcon, text: "4.9/5 sur les stores" },
 ];
 
-export default function PricingPage() {
+export default function BillingPage() {
     const [isAnnual, setIsAnnual] = useState(true);
 
     return (

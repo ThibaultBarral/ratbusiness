@@ -148,7 +148,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         </div>
                         <div className="mt-auto">
                             <div className="space-y-2 mb-4">
-                                <Link href="/pricing">
+                                <Link href="/billing">
                                     <Button
                                         variant="ghost"
                                         className="w-full justify-start text-sm font-medium hover:bg-accent hover:text-accent-foreground transition"

@@ -1,0 +1,6 @@
+# Cursor Rules
+
+# Utiliser l'alias pour Supabase
+# Pour tous les fichiers où on utilise createClient, importer depuis :
+# import { createClient } from "@/utils/supabase/server";
+# au lieu d'un chemin relatif. 

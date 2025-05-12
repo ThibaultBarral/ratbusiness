@@ -378,9 +378,8 @@ export default function StatisticsPage() {
                                         <p className="text-2xl font-bold">{overview?.investedAmount.toFixed(2) ?? "0.00"} €</p>
                                     </CardContent>
                                 </Card>
-                            </div>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
+
                                 <Card className="shadow-sm">
                                     <CardHeader><CardTitle>Articles achetés</CardTitle></CardHeader>
                                     <CardContent>
@@ -401,9 +400,7 @@ export default function StatisticsPage() {
                                         <p className="text-2xl font-bold">{overview?.totalSoldUnits ?? 0}</p>
                                     </CardContent>
                                 </Card>
-                            </div>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
                                 <Card className="shadow-sm">
                                     <CardHeader><CardTitle>Nombre de ventes réalisées</CardTitle></CardHeader>
                                     <CardContent>

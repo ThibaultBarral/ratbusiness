@@ -201,7 +201,7 @@ export function SalesChart({ filter }: { filter: string }) {
                             tickLine={false}
                             axisLine={false}
                             tickMargin={8}
-                            tickFormatter={(value) => `${value}€`}
+                            tickFormatter={(value) => `${value} €`}
                         />
                         <ChartTooltip cursor={false} content={<ChartTooltipContent />} />
                         <defs>

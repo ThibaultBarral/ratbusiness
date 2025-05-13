@@ -355,7 +355,7 @@ export default function DashboardPage() {
                         )}
                     </CardHeader>
                     <CardContent>
-                        <p className="text-2xl font-bold">€{totalRevenue.toFixed(2)}</p>
+                        <p className="text-2xl font-bold">{totalRevenue.toFixed(2)} €</p>
                     </CardContent>
                 </Card>
 
@@ -374,7 +374,7 @@ export default function DashboardPage() {
                         )}
                     </CardHeader>
                     <CardContent>
-                        <p className="text-2xl font-bold">€{totalProfit.toFixed(2)}</p>
+                        <p className="text-2xl font-bold">{totalProfit.toFixed(2)} €</p>
                     </CardContent>
                 </Card>
 
@@ -414,7 +414,7 @@ export default function DashboardPage() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-2xl font-bold">€{(totalProfit - logisticsCost).toFixed(2)}</p>
+                        <p className="text-2xl font-bold">{(totalProfit - logisticsCost).toFixed(2)} €</p>
                     </CardContent>
                 </Card>
             </div>

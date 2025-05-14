@@ -100,6 +100,64 @@ export async function POST(req: NextRequest) {
         }
     }
 
+    if (event.type === "customer.subscription.created") {
+        const subscription = event.data.object as Stripe.Subscription;
+        console.log("✅ Nouvelle subscription créée:", subscription);
+
+        // Récupérer le customer pour obtenir l'email
+        const customer = await stripe.customers.retrieve(subscription.customer as string);
+        console.log("👤 Customer récupéré:", customer);
+
+        if (!customer || customer.deleted) {
+            console.error("❌ Customer non trouvé ou supprimé");
+            return new NextResponse("Customer not found", { status: 400 });
+        }
+
+        // Trouver l'utilisateur dans Supabase par email
+        const { data: userData, error: userError } = await supabase
+            .from("users")
+            .select("id")
+            .eq("email", customer.email)
+            .single();
+
+        if (userError || !userData) {
+            console.error("❌ Utilisateur non trouvé dans Supabase:", userError);
+            return new NextResponse("User not found", { status: 400 });
+        }
+
+        // Trouver le plan correspondant au price_id
+        const priceId = subscription.items.data[0]?.price.id;
+        const planName = getPriceKeyByStripeId(priceId);
+
+        if (!planName) {
+            console.error("❌ Plan non trouvé pour le price_id:", priceId);
+            return new NextResponse("Plan not found", { status: 400 });
+        }
+
+        console.log("📝 Tentative d'insertion dans Supabase avec les données:", {
+            user_id: userData.id,
+            stripe_customer_id: subscription.customer,
+            stripe_subscription_id: subscription.id,
+            plan: planName,
+            status: subscription.status
+        });
+
+        const { data, error } = await supabase.from("subscriptions").insert({
+            user_id: userData.id,
+            stripe_customer_id: subscription.customer as string,
+            stripe_subscription_id: subscription.id,
+            plan: planName,
+            status: subscription.status,
+        }).select();
+
+        if (error) {
+            console.error("❌ Erreur lors de l'insertion dans Supabase :", error);
+            return new NextResponse(`Database Error: ${error.message}`, { status: 500 });
+        }
+
+        console.log("✅ Données insérées avec succès dans Supabase:", data);
+    }
+
     if (event.type === "customer.subscription.updated") {
         const subscription = event.data.object as unknown as { customer: string; items: { data: { price: { id: string } }[] } };
 
@@ -117,17 +175,6 @@ export async function POST(req: NextRequest) {
         }
 
         console.log("✅ Plan trouvé et sélectionné:", planName);
-        // Fonction utilitaire pour trouver la clé du plan à partir de l'ID Stripe Price
-        function getPriceKeyByStripeId(stripePriceId: string): string | null {
-            for (const [plan, periods] of Object.entries(prices)) {
-                for (const [period, id] of Object.entries(periods)) {
-                    if (id === stripePriceId) {
-                        return `${plan}_${period}`;
-                    }
-                }
-            }
-            return null;
-        }
 
         const { error } = await supabase
             .from("subscriptions")
@@ -159,4 +206,16 @@ export async function POST(req: NextRequest) {
     }
 
     return new NextResponse(null, { status: 200 });
+}
+
+// Fonction utilitaire pour trouver la clé du plan à partir de l'ID Stripe Price
+function getPriceKeyByStripeId(stripePriceId: string): string | null {
+    for (const [plan, periods] of Object.entries(prices)) {
+        for (const [period, id] of Object.entries(periods)) {
+            if (id === stripePriceId) {
+                return `${plan}_${period}`;
+            }
+        }
+    }
+    return null;
 }

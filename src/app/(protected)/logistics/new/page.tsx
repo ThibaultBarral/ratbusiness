@@ -29,7 +29,8 @@ const AddLogisticsItem = () => {
         unit_price: "",
         quantity: "1",
         used_per_sale: "",
-        purchase_link: ""
+        purchase_link: "",
+        purchase_date: ""
     });
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -80,6 +81,7 @@ const AddLogisticsItem = () => {
             quantity: quantity,
             used_per_sale: usedPerSale,
             purchase_link: form.purchase_link || null,
+            purchase_date: form.purchase_date || null,
             user_id: user.id
         });
 
@@ -164,6 +166,20 @@ const AddLogisticsItem = () => {
                         value={form.purchase_link}
                         onChange={handleChange}
                         placeholder="https://..."
+                    />
+                </div>
+
+                <div>
+                    <Label htmlFor="purchase_date">
+                        Date d&apos;achat
+                        <span className="text-sm text-gray-500 ml-1">(optionnel)</span>
+                    </Label>
+                    <Input
+                        id="purchase_date"
+                        name="purchase_date"
+                        type="date"
+                        value={form.purchase_date}
+                        onChange={handleChange}
                     />
                 </div>
 

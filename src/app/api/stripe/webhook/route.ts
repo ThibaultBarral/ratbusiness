@@ -7,6 +7,10 @@ import { prices } from "@/lib/stripe/prices";
 
 const endpointSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
+if (!endpointSecret) {
+    console.error("❌ STRIPE_WEBHOOK_SECRET n'est pas défini dans les variables d'environnement");
+}
+
 const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -14,14 +18,29 @@ const supabase = createClient(
 
 export async function POST(req: NextRequest) {
     const body = await req.text();
-    const sig = (await headers()).get("stripe-signature") as string;
+    const sig = (await headers()).get("stripe-signature");
+
+    if (!sig) {
+        console.error("❌ Aucune signature Stripe trouvée dans les headers");
+        return new NextResponse("No signature found", { status: 400 });
+    }
+
+    if (!endpointSecret) {
+        console.error("❌ STRIPE_WEBHOOK_SECRET n'est pas défini");
+        return new NextResponse("Webhook secret not configured", { status: 500 });
+    }
 
     let event: Stripe.Event;
 
     try {
         event = stripe.webhooks.constructEvent(body, sig, endpointSecret);
+        console.log("✅ Signature vérifiée avec succès pour l'événement:", event.type);
     } catch (err: unknown) {
-        console.error("❌ Erreur de vérification Stripe :", err instanceof Error ? err.message : String(err));
+        console.error("❌ Erreur de vérification Stripe :", {
+            error: err instanceof Error ? err.message : String(err),
+            signature: sig,
+            body: body.substring(0, 100) + "..." // Log only the beginning of the body
+        });
         return new NextResponse(`Webhook Error: ${err instanceof Error ? err.message : String(err)}`, { status: 400 });
     }
 
@@ -47,8 +66,6 @@ export async function POST(req: NextRequest) {
         try {
             const subscription = await stripe.subscriptions.retrieve(subscription_id) as Stripe.Subscription;
             console.log("📝 Subscription récupérée", { subscription });
-
-
 
             const { error } = await supabase.from("subscriptions").insert({
                 user_id,

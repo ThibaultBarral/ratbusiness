@@ -6,6 +6,7 @@ import { Toaster } from 'sonner';
 
 import { Analytics } from '@vercel/analytics/next';
 import { SpeedInsights } from '@vercel/speed-insights/next';
+import { UserPlanProvider } from "@/contexts/UserPlanContext";
 
 export const metadata: Metadata = {
   title: "Ratbusiness - Gestion de business Vinted | Suivi des ventes et bénéfices",
@@ -92,7 +93,9 @@ export default function RootLayout({
         <meta charSet="utf-8" />
       </head>
       <body>
-        {children}
+        <UserPlanProvider>
+          {children}
+        </UserPlanProvider>
         <Toaster richColors position="top-center" />
         <Analytics />
         <SpeedInsights />

@@ -16,6 +16,8 @@ import {
     TabsContent,
 } from "@/components/ui/tabs";
 import ArticleImage from "@/components/ArticleImage";
+import { useUserPlan } from "@/contexts/UserPlanContext";
+import { Badge } from "@/components/ui/badge";
 
 interface Article {
     id: string;
@@ -24,7 +26,7 @@ interface Article {
     quantity: number;
     unit_cost: number;
     platform: string;
-    sales: { id: string; sale_date: string; sale_price: number }[];
+    sales: { id: string; sale_date: string; sale_price: number; ads_cost?: number }[];
     image_url?: string;
     purchase_date?: string;
 }
@@ -53,6 +55,8 @@ function ArticlesTabs({
 }) {
     const [tabValue, setTabValue] = useState("actifs");
     const [badgeFilter, setBadgeFilter] = useState<"all" | "top" | "flash">("all");
+    const { plan } = useUserPlan();
+    const isPro = plan !== "starter";
 
     return (
         <Tabs value={tabValue} onValueChange={setTabValue} className="w-full mt-6">
@@ -73,16 +77,45 @@ function ArticlesTabs({
                             <Button variant={badgeFilter === "all" ? "default" : "outline"} onClick={() => setBadgeFilter("all")}>
                                 Tous
                             </Button>
-                            <Button variant={badgeFilter === "top" ? "default" : "outline"} onClick={() => setBadgeFilter("top")}>
-                                🏅 Top Seller
-                            </Button>
-                            <Button variant={badgeFilter === "flash" ? "default" : "outline"} onClick={() => setBadgeFilter("flash")}>
-                                ⚡ Flash Sale
-                            </Button>
+                            <div className="relative group">
+                                <Button
+                                    variant="outline"
+                                    disabled={!isPro}
+                                    onClick={() => isPro && setBadgeFilter("top")}
+                                    className={!isPro ? "opacity-60 cursor-not-allowed" : ""}
+                                >
+                                    🏅 Top Seller
+                                    {!isPro && <Badge variant="secondary" className="ml-2">PRO</Badge>}
+                                </Button>
+                                {!isPro && (
+                                    <div className="absolute z-10 left-0 top-full mt-1 text-xs text-muted-foreground bg-white border rounded shadow px-2 py-1 opacity-0 group-hover:opacity-100 transition">
+                                        Passez au plan Pro pour utiliser ce filtre
+                                    </div>
+                                )}
+                            </div>
+                            <div className="relative group">
+                                <Button
+                                    variant="outline"
+                                    disabled={!isPro}
+                                    onClick={() => isPro && setBadgeFilter("flash")}
+                                    className={!isPro ? "opacity-60 cursor-not-allowed" : ""}
+                                >
+                                    ⚡ Flash Sale
+                                    {!isPro && <Badge variant="secondary" className="ml-2">PRO</Badge>}
+                                </Button>
+                                {!isPro && (
+                                    <div className="absolute z-10 left-0 top-full mt-1 text-xs text-muted-foreground bg-white border rounded shadow px-2 py-1 opacity-0 group-hover:opacity-100 transition">
+                                        Passez au plan Pro pour utiliser ce filtre
+                                    </div>
+                                )}
+                            </div>
                         </div>
                         {(() => {
                             const filteredArticles = articles.filter((article) => {
-                                const totalBenefit = article.sales?.reduce((sum, sale) => sum + (sale.sale_price - article.unit_cost), 0) || 0;
+                                // Si l'utilisateur est sur le plan starter, on ignore les filtres
+                                if (!isPro) return true;
+
+                                const totalBenefit = article.sales?.reduce((sum, sale) => sum + (sale.sale_price - article.unit_cost - (sale.ads_cost || 0)), 0) || 0;
                                 const isTopSeller = totalBenefit > 30;
                                 const isQuickSale = article.purchase_date && article.sales.length > 0
                                     ? article.sales.some((sale) => {
@@ -112,7 +145,7 @@ function ArticlesTabs({
                                             : null;
                                         // Total bénéfice et bénéfice/jour
                                         const totalBenefit = article.sales && article.sales.length > 0
-                                            ? article.sales.reduce((sum, sale) => sum + (sale.sale_price - article.unit_cost), 0)
+                                            ? article.sales.reduce((sum, sale) => sum + (sale.sale_price - article.unit_cost - (sale.ads_cost || 0)), 0)
                                             : 0;
                                         // Ajout des variables isTopSeller et isQuickSale
                                         const isTopSeller = totalBenefit > 30;
@@ -132,7 +165,7 @@ function ArticlesTabs({
                                             : 0;
                                         // Marge moyenne réelle sur les ventes
                                         const averageMargin = article.sales.length > 0
-                                            ? article.sales.reduce((sum, sale) => sum + (sale.sale_price - article.unit_cost), 0) / article.sales.length
+                                            ? article.sales.reduce((sum, sale) => sum + (sale.sale_price - article.unit_cost - (sale.ads_cost || 0)), 0) / article.sales.length
                                             : 0;
                                         // Score de marge (max 100)
                                         const marginScore = article.unit_cost > 0
@@ -186,12 +219,12 @@ function ArticlesTabs({
                                                 <div className="flex-1 relative">
                                                     <h3 className="text-lg font-semibold">{article.name}</h3>
                                                     <div className="flex gap-2 mt-1 absolute top-0 right-0">
-                                                        {isTopSeller && (
+                                                        {isPro && isTopSeller && (
                                                             <span className="px-2 py-1 text-xs font-semibold text-green-800 bg-green-100 rounded-full">
                                                                 🏅 Top Seller
                                                             </span>
                                                         )}
-                                                        {isQuickSale && (
+                                                        {isPro && isQuickSale && (
                                                             <span className="px-2 py-1 text-xs font-semibold text-blue-800 bg-blue-100 rounded-full">
                                                                 ⚡ Flash Sale
                                                             </span>
@@ -206,30 +239,46 @@ function ArticlesTabs({
                                                             Acheté il y a {differenceInDays(new Date(), parseISO(article.purchase_date))} jour(s)
                                                         </p>
                                                     )}
-                                                    <p className="text-sm mt-1 text-green-700">
-                                                        💰 Prix conseillé (x3) : {((article.unit_cost * 3).toFixed(2))} €
-                                                    </p>
-                                                    <p className="text-sm mt-1 text-orange-600">
-                                                        💡 Prix minimum (x1.5) : {(article.unit_cost * 1.5).toFixed(2)} €
-                                                    </p>
-                                                    <p className="text-sm mt-1 text-blue-700">
-                                                        🧠 Assistant Pricing : Prix recommandé :{" "}
-                                                        <strong>{suggestedPrice} €</strong>
-                                                    </p>
-                                                    <details className={`text-sm mt-1 font-medium ${scoreColor}`}>
-                                                        <summary>
-                                                            🔥 Score de rentabilité : {score} / 100
-                                                        </summary>
-                                                        {/* Explication du score de rentabilité */}
-                                                        <div className="mt-2 pl-4 text-muted-foreground">
-                                                            <p>🧮 <strong>Composé de :</strong></p>
-                                                            <ul className="list-disc ml-4">
-                                                                <li>Marge moyenne réelle sur les ventes ➜ <strong>{marginScore.toFixed(0)} / 100</strong></li>
-                                                                <li>Vitesse moyenne entre ventes ➜ <strong>{speedScore.toFixed(0)} / 100</strong></li>
-                                                                <li>Rentabilité (€/jour) ➜ <strong>{rentabilityScore.toFixed(0)} / 100</strong></li>
-                                                            </ul>
+                                                    {isPro ? (
+                                                        <>
+                                                            <p className="text-sm mt-1 text-green-700">
+                                                                💰 Prix conseillé (x3) : {((article.unit_cost * 3).toFixed(2))} €
+                                                            </p>
+                                                            <p className="text-sm mt-1 text-orange-600">
+                                                                💡 Prix minimum (x1.5) : {(article.unit_cost * 1.5).toFixed(2)} €
+                                                            </p>
+                                                            <p className="text-sm mt-1 text-blue-700">
+                                                                🧠 Assistant Pricing : Prix recommandé :{" "}
+                                                                <strong>{suggestedPrice} €</strong>
+                                                            </p>
+                                                            <details className={`text-sm mt-1 font-medium ${scoreColor}`}>
+                                                                <summary>
+                                                                    🔥 Score de rentabilité : {score} / 100
+                                                                </summary>
+                                                                <div className="mt-2 pl-4 text-muted-foreground">
+                                                                    <p>🧮 <strong>Composé de :</strong></p>
+                                                                    <ul className="list-disc ml-4">
+                                                                        <li>Marge moyenne réelle sur les ventes ➜ <strong>{marginScore.toFixed(0)} / 100</strong></li>
+                                                                        <li>Vitesse moyenne entre ventes ➜ <strong>{speedScore.toFixed(0)} / 100</strong></li>
+                                                                        <li>Rentabilité (€/jour) ➜ <strong>{rentabilityScore.toFixed(0)} / 100</strong></li>
+                                                                    </ul>
+                                                                </div>
+                                                            </details>
+                                                        </>
+                                                    ) : (
+                                                        <div className="flex flex-col items-center justify-center border rounded-md bg-gray-50 p-4 mt-2">
+                                                            <div className="flex items-center gap-2 mb-2">
+                                                                <span className="font-semibold">Analyse de rentabilité</span>
+                                                                <Badge variant="secondary" className="text-xs">PRO</Badge>
+                                                            </div>
+                                                            <p className="text-sm text-muted-foreground mb-2">
+                                                                Accédez aux analyses détaillées de rentabilité et aux recommandations de prix
+                                                            </p>
+                                                            <Button variant="default" onClick={() => window.location.href = "/billing"}>
+                                                                Passer au Pro
+                                                            </Button>
                                                         </div>
-                                                    </details>
+                                                    )}
                                                     <div className="flex flex-row gap-2 mt-4">
                                                         <Button onClick={() => openDialog(article.id)}>
                                                             Ajouter une vente
@@ -314,6 +363,7 @@ export default function ArticlesPage() {
     const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null);
     const [salePrice, setSalePrice] = useState("");
     const [saleDate, setSaleDate] = useState(format(new Date(), "yyyy-MM-dd"));
+    const [adsCost, setAdsCost] = useState("");
     const [stockValueGrowthPercent, setStockValueGrowthPercent] = useState<number | null>(null);
 
     // Récupération des articles (actifs et archivés)
@@ -321,7 +371,7 @@ export default function ArticlesPage() {
         setLoading(true);
         const { data, error } = await supabase
             .from("articles")
-            .select("id, name, brand, quantity, unit_cost, platform, image_url, purchase_date, sales(id, sale_date, sale_price)");
+            .select("id, name, brand, quantity, unit_cost, platform, image_url, purchase_date, sales(id, sale_date, sale_price, ads_cost)");
         if (error) {
             console.error("Erreur récupération articles :", error.message);
             setLoading(false);
@@ -358,6 +408,7 @@ export default function ArticlesPage() {
         setSelectedArticleId(articleId);
         setSalePrice("");
         setSaleDate(format(new Date(), "yyyy-MM-dd"));
+        setAdsCost("");
         setShowDialog(true);
     };
 
@@ -377,15 +428,27 @@ export default function ArticlesPage() {
             .eq("auth_id", user.id)
             .single();
 
-        const { error } = await supabase.from("sales").insert([
-            {
-                article_id: selectedArticleId,
-                sale_price: parseFloat(salePrice),
-                sale_date: saleDate,
-                user_id: user.id, // conserve l'ancien champ pour compatibilité
-                user_mapped_id: mappedUser?.id, // nouvelle référence vers users.id
-            },
-        ]);
+        const saleData: {
+            article_id: string;
+            sale_price: number;
+            sale_date: string;
+            user_id: string;
+            user_mapped_id: string | null;
+            ads_cost?: number;
+        } = {
+            article_id: selectedArticleId,
+            sale_price: parseFloat(salePrice),
+            sale_date: saleDate,
+            user_id: user.id, // conserve l'ancien champ pour compatibilité
+            user_mapped_id: mappedUser?.id, // nouvelle référence vers users.id
+        };
+
+        // Ajouter ads_cost seulement si une valeur est saisie
+        if (adsCost) {
+            saleData.ads_cost = parseFloat(adsCost);
+        }
+
+        const { error } = await supabase.from("sales").insert([saleData]);
 
         if (error) {
             alert("Erreur lors de l'enregistrement : " + error.message);
@@ -471,7 +534,7 @@ export default function ArticlesPage() {
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                         <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="price" className="text-right">
+                            <Label htmlFor="price">
                                 Prix de vente (€)
                             </Label>
                             <Input
@@ -484,7 +547,7 @@ export default function ArticlesPage() {
                             />
                         </div>
                         <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="date" className="text-right">
+                            <Label htmlFor="date">
                                 Date
                             </Label>
                             <Input
@@ -493,6 +556,20 @@ export default function ArticlesPage() {
                                 onChange={(e) => setSaleDate(e.target.value)}
                                 type="date"
                                 className="col-span-3"
+                            />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="adsCost">
+                                Coût publicitaire (€)
+                            </Label>
+                            <Input
+                                id="adsCost"
+                                value={adsCost}
+                                onChange={(e) => setAdsCost(e.target.value)}
+                                type="number"
+                                step="0.01"
+                                className="col-span-3"
+                                placeholder="Optionnel"
                             />
                         </div>
                     </div>

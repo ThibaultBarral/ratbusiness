@@ -1,6 +1,7 @@
 // app/(protected)/layout.tsx
 import { createClient } from '../../../utils/supabase/server';
 import { redirect } from 'next/navigation';
+import { PlanProtection } from '@/components/PlanProtection';
 
 export default async function ProtectedLayout({
     children,
@@ -16,5 +17,9 @@ export default async function ProtectedLayout({
         redirect('/login');
     }
 
-    return <>{children}</>;
+    return (
+        <PlanProtection>
+            {children}
+        </PlanProtection>
+    );
 }

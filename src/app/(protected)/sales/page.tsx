@@ -7,6 +7,8 @@ import { format, subDays, startOfMonth, endOfMonth, isAfter, isBefore } from "da
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import ArticleImage from "@/components/ArticleImage";
+import { useUserPlan } from "@/contexts/UserPlanContext";
+import { ProLock } from "@/components/ui/pro-lock";
 
 type Sale = {
     id: string;
@@ -19,6 +21,7 @@ type Sale = {
         unit_cost: number;
         image_url: string;
     }[];
+    ads_cost?: number;
 };
 
 export default function SalesPage() {
@@ -26,6 +29,7 @@ export default function SalesPage() {
     const [loading, setLoading] = useState(true);
     const supabase = createClient(); // Create the Supabase client instance
     const [filter, setFilter] = useState("all");
+    const { plan } = useUserPlan();
 
     const filteredSales = sales.filter((sale) => {
         const saleDate = new Date(sale.sale_date);
@@ -43,7 +47,7 @@ export default function SalesPage() {
         .sort((a, b) => {
             const aCost = a.articles[0]?.unit_cost || 0;
             const bCost = b.articles[0]?.unit_cost || 0;
-            return (b.sale_price - bCost) - (a.sale_price - aCost);
+            return (b.sale_price - bCost - (b.ads_cost || 0)) - (a.sale_price - aCost - (a.ads_cost || 0));
         })
         .slice(0, 10);
 
@@ -65,7 +69,8 @@ export default function SalesPage() {
                         name,
                         unit_cost,
                         image_url
-                    )
+                    ),
+                    ads_cost
                 `)
                 .order("sale_date", { ascending: false });
 
@@ -84,31 +89,45 @@ export default function SalesPage() {
     return (
         <DashboardLayout>
             <h2 className="text-2xl font-bold mb-6">Historique des ventes</h2>
-            <div className="mb-4 flex space-x-2">
+            <div className="mb-4 flex space-x-2 items-center">
                 <Button
                     variant={filter === "all" ? "default" : "outline"}
                     onClick={() => setFilter("all")}
                 >
                     Toutes
                 </Button>
-                <Button
-                    variant={filter === "last7days" ? "default" : "outline"}
-                    onClick={() => setFilter("last7days")}
-                >
-                    7 derniers jours
-                </Button>
-                <Button
-                    variant={filter === "lastMonth" ? "default" : "outline"}
-                    onClick={() => setFilter("lastMonth")}
-                >
-                    Mois dernier
-                </Button>
-                <Button
-                    variant={filter === "bestSales" ? "default" : "outline"}
-                    onClick={() => setFilter("bestSales")}
-                >
-                    Meilleures ventes
-                </Button>
+                {plan !== "starter" ? (
+                    <div className="flex space-x-2">
+                        <Button
+                            variant={filter === "last7days" ? "default" : "outline"}
+                            onClick={() => setFilter("last7days")}
+                        >
+                            7 derniers jours
+                        </Button>
+                        <Button
+                            variant={filter === "lastMonth" ? "default" : "outline"}
+                            onClick={() => setFilter("lastMonth")}
+                        >
+                            Mois dernier
+                        </Button>
+                        <Button
+                            variant={filter === "bestSales" ? "default" : "outline"}
+                            onClick={() => setFilter("bestSales")}
+                        >
+                            Meilleures ventes
+                        </Button>
+                    </div>
+                ) : (
+                    <ProLock
+                        isPro={false}
+                        inline
+                        title="Débloquez les filtres avancés"
+                        description="Visualisez l'évolution de vos ventes et prenez de meilleures décisions"
+                        buttonText="Passer au plan Pro"
+                    >
+                        <></>
+                    </ProLock>
+                )}
             </div>
             <p>Total cumulé : {totalSales.toFixed(2)} €</p>
             {loading ? (
@@ -120,7 +139,7 @@ export default function SalesPage() {
                     {displayedSales.map((sale) => {
                         const article = Array.isArray(sale.articles) ? sale.articles[0] : sale.articles;
                         const purchasePrice = article?.unit_cost || 0;
-                        const benefit = sale.sale_price - purchasePrice;
+                        const benefit = sale.sale_price - purchasePrice - (sale.ads_cost || 0);
                         return (
                             <div
                                 key={sale.id}
@@ -140,6 +159,7 @@ export default function SalesPage() {
                                         </p>
                                         <p className="text-sm">Prix d&apos;achat : {purchasePrice.toFixed(2)} €</p>
                                         <p className="text-sm">Prix de vente : {sale.sale_price.toFixed(2)} €</p>
+                                        {sale.ads_cost && <p className="text-sm">Coût publicitaire : {sale.ads_cost.toFixed(2)} €</p>}
                                         <p className={`text-sm font-medium ${benefit < 0 ? "text-red-600" : "text-green-600"}`}>
                                             Bénéfice : {benefit.toFixed(2)} €
                                         </p>

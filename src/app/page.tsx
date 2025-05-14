@@ -152,10 +152,10 @@ export default function HomePage() {
                 <h3 className="text-xl font-bold mb-2">Starter</h3>
                 <p className="text-gray-400 mb-4">Pour démarrer</p>
                 <div className="text-3xl font-bold mb-6">
-                  9€<span className="text-gray-400 text-base font-normal">/mois</span>
+                  5,6€<span className="text-gray-400 text-base font-normal">/mois</span>
                   <span className="text-sm text-green-400 ml-2">(annuel)</span>
                 </div>
-                <div className="text-sm text-gray-400 mb-6">ou 11€/mois (mensuel)</div>
+                <div className="text-sm text-gray-400 mb-6">ou 7€/mois (mensuel)</div>
                 <ul className="space-y-4 mb-8">
                   <li className="flex items-center gap-2">
                     <Check className="w-5 h-5 text-green-400" aria-hidden="true" />
@@ -185,10 +185,10 @@ export default function HomePage() {
                 <h3 className="text-xl font-bold mb-2">Pro</h3>
                 <p className="text-gray-400 mb-4">Pour les vendeurs actifs</p>
                 <div className="text-3xl font-bold mb-6">
-                  19€<span className="text-gray-400 text-base font-normal">/mois</span>
+                  11,2€<span className="text-gray-400 text-base font-normal">/mois</span>
                   <span className="text-sm text-green-400 ml-2">(annuel)</span>
                 </div>
-                <div className="text-sm text-gray-400 mb-6">ou 24€/mois (mensuel)</div>
+                <div className="text-sm text-gray-400 mb-6">ou 14€/mois (mensuel)</div>
                 <ul className="space-y-4 mb-8">
                   <li className="flex items-center gap-2">
                     <Check className="w-5 h-5 text-green-400" aria-hidden="true" />

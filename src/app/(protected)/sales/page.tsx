@@ -7,6 +7,8 @@ import { format, subDays, startOfMonth, endOfMonth, isAfter, isBefore } from "da
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import ArticleImage from "@/components/ArticleImage";
+import { useUserPlan } from "@/contexts/UserPlanContext";
+import { ProLock } from "@/components/ui/pro-lock";
 
 type Sale = {
     id: string;
@@ -26,6 +28,7 @@ export default function SalesPage() {
     const [loading, setLoading] = useState(true);
     const supabase = createClient(); // Create the Supabase client instance
     const [filter, setFilter] = useState("all");
+    const { plan } = useUserPlan();
 
     const filteredSales = sales.filter((sale) => {
         const saleDate = new Date(sale.sale_date);
@@ -84,31 +87,45 @@ export default function SalesPage() {
     return (
         <DashboardLayout>
             <h2 className="text-2xl font-bold mb-6">Historique des ventes</h2>
-            <div className="mb-4 flex space-x-2">
+            <div className="mb-4 flex space-x-2 items-center">
                 <Button
                     variant={filter === "all" ? "default" : "outline"}
                     onClick={() => setFilter("all")}
                 >
                     Toutes
                 </Button>
-                <Button
-                    variant={filter === "last7days" ? "default" : "outline"}
-                    onClick={() => setFilter("last7days")}
-                >
-                    7 derniers jours
-                </Button>
-                <Button
-                    variant={filter === "lastMonth" ? "default" : "outline"}
-                    onClick={() => setFilter("lastMonth")}
-                >
-                    Mois dernier
-                </Button>
-                <Button
-                    variant={filter === "bestSales" ? "default" : "outline"}
-                    onClick={() => setFilter("bestSales")}
-                >
-                    Meilleures ventes
-                </Button>
+                {plan !== "starter" ? (
+                    <div className="flex space-x-2">
+                        <Button
+                            variant={filter === "last7days" ? "default" : "outline"}
+                            onClick={() => setFilter("last7days")}
+                        >
+                            7 derniers jours
+                        </Button>
+                        <Button
+                            variant={filter === "lastMonth" ? "default" : "outline"}
+                            onClick={() => setFilter("lastMonth")}
+                        >
+                            Mois dernier
+                        </Button>
+                        <Button
+                            variant={filter === "bestSales" ? "default" : "outline"}
+                            onClick={() => setFilter("bestSales")}
+                        >
+                            Meilleures ventes
+                        </Button>
+                    </div>
+                ) : (
+                    <ProLock
+                        isPro={false}
+                        inline
+                        title="Débloquez les filtres avancés"
+                        description="Visualisez l'évolution de vos ventes et prenez de meilleures décisions"
+                        buttonText="Passer au plan Pro"
+                    >
+                        <></>
+                    </ProLock>
+                )}
             </div>
             <p>Total cumulé : {totalSales.toFixed(2)} €</p>
             {loading ? (

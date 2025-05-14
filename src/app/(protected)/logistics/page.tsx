@@ -13,9 +13,10 @@ import {
     TableRow,
 } from "@/components/ui/table";
 import { Plus, Search, Trash2 } from "lucide-react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { createClient } from "../../../../utils/supabase/client";
+import { ProLock, ProLockButton } from "@/components/ui/pro-lock";
 
 // Type pour les opérations logistiques
 interface LogisticsItem {
@@ -31,10 +32,31 @@ interface LogisticsItem {
 }
 
 export default function LogisticsPage() {
+    const router = useRouter();
     const [searchQuery, setSearchQuery] = useState("");
     const [items, setItems] = useState<LogisticsItem[]>([]);
     const [loading, setLoading] = useState(true);
+    const [isProUser, setIsProUser] = useState(false);
     const supabase = createClient();
+
+    useEffect(() => {
+        const checkPlan = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
+            const { data: subscription } = await supabase
+                .from("subscriptions")
+                .select("plan")
+                .eq("user_id", user.id)
+                .order("created_at", { ascending: false })
+                .limit(1)
+                .maybeSingle();
+
+            setIsProUser(subscription?.plan === "pro");
+        };
+
+        checkPlan();
+    }, []);
 
     useEffect(() => {
         const fetchItems = async () => {
@@ -65,6 +87,11 @@ export default function LogisticsPage() {
     );
 
     const handleDelete = async (id: string) => {
+        if (!isProUser) {
+            router.push("/billing");
+            return;
+        }
+
         if (!confirm("Êtes-vous sûr de vouloir supprimer cet article ?")) {
             return;
         }
@@ -77,7 +104,6 @@ export default function LogisticsPage() {
 
             if (error) throw error;
 
-            // Mettre à jour la liste des articles après la suppression
             setItems(items.filter(item => item.id !== id));
         } catch (error) {
             console.error('Error deleting logistics item:', error);
@@ -90,96 +116,105 @@ export default function LogisticsPage() {
             <div className="space-y-6">
                 <div className="flex justify-between items-center">
                     <h1 className="text-3xl font-bold">Logistique</h1>
-                    <Link href="/logistics/new">
-                        <Button>
-                            <Plus className="mr-2 h-4 w-4" />
-                            Nouvel Article
-                        </Button>
-                    </Link>
+                    <ProLockButton
+                        isPro={isProUser}
+                        onClick={() => router.push("/logistics/new")}
+                    >
+                        <Plus className="mr-2 h-4 w-4" />
+                        Nouvel Article
+                    </ProLockButton>
                 </div>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Articles Logistiques</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex items-center space-x-2 mb-4">
-                            <div className="relative flex-1">
-                                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                                <Input
-                                    placeholder="Rechercher un article..."
-                                    className="pl-8"
-                                    value={searchQuery}
-                                    onChange={(e) => setSearchQuery(e.target.value)}
-                                />
+                <ProLock
+                    isPro={isProUser}
+                    title="Gestion Logistique Pro"
+                    description="Passez au plan Pro pour gérer vos articles logistiques"
+                >
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Articles Logistiques</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="flex items-center space-x-2 mb-4">
+                                <div className="relative flex-1">
+                                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                                    <Input
+                                        placeholder="Rechercher un article..."
+                                        className="pl-8"
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                    />
+                                </div>
                             </div>
-                        </div>
 
-                        <div className="rounded-md border">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Nom</TableHead>
-                                        <TableHead>Prix unitaire</TableHead>
-                                        <TableHead>Quantité</TableHead>
-                                        <TableHead>Utilisé par vente</TableHead>
-                                        <TableHead>Date d&apos;achat</TableHead>
-                                        <TableHead>Actions</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {loading ? (
+                            <div className="rounded-md border">
+                                <Table>
+                                    <TableHeader>
                                         <TableRow>
-                                            <TableCell colSpan={6} className="text-center">
-                                                Chargement...
-                                            </TableCell>
+                                            <TableHead>Nom</TableHead>
+                                            <TableHead>Prix unitaire</TableHead>
+                                            <TableHead>Quantité</TableHead>
+                                            <TableHead>Utilisé par vente</TableHead>
+                                            <TableHead>Date d&apos;achat</TableHead>
+                                            <TableHead>Actions</TableHead>
                                         </TableRow>
-                                    ) : filteredItems.length === 0 ? (
-                                        <TableRow>
-                                            <TableCell colSpan={6} className="text-center">
-                                                Aucun article trouvé
-                                            </TableCell>
-                                        </TableRow>
-                                    ) : (
-                                        filteredItems.map((item) => (
-                                            <TableRow key={item.id}>
-                                                <TableCell className="font-medium">{item.name}</TableCell>
-                                                <TableCell>{item.unit_price.toFixed(2)}€</TableCell>
-                                                <TableCell>{item.quantity}</TableCell>
-                                                <TableCell>{item.used_per_sale}</TableCell>
-                                                <TableCell>
-                                                    {item.purchase_date ? new Date(item.purchase_date).toLocaleDateString() : '-'}
-                                                </TableCell>
-                                                <TableCell>
-                                                    <div className="flex items-center space-x-2">
-                                                        {item.purchase_link && (
-                                                            <a
-                                                                href={item.purchase_link}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className="text-blue-600 underline text-sm"
-                                                            >
-                                                                Réapprovisionner
-                                                            </a>
-                                                        )}
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            onClick={() => handleDelete(item.id)}
-                                                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                                        >
-                                                            <Trash2 className="h-4 w-4" />
-                                                        </Button>
-                                                    </div>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {loading ? (
+                                            <TableRow>
+                                                <TableCell colSpan={6} className="text-center">
+                                                    Chargement...
                                                 </TableCell>
                                             </TableRow>
-                                        ))
-                                    )}
-                                </TableBody>
-                            </Table>
-                        </div>
-                    </CardContent>
-                </Card>
+                                        ) : filteredItems.length === 0 ? (
+                                            <TableRow>
+                                                <TableCell colSpan={6} className="text-center">
+                                                    Aucun article trouvé
+                                                </TableCell>
+                                            </TableRow>
+                                        ) : (
+                                            filteredItems.map((item) => (
+                                                <TableRow key={item.id}>
+                                                    <TableCell className="font-medium">{item.name}</TableCell>
+                                                    <TableCell>{item.unit_price.toFixed(2)}€</TableCell>
+                                                    <TableCell>{item.quantity}</TableCell>
+                                                    <TableCell>{item.used_per_sale}</TableCell>
+                                                    <TableCell>
+                                                        {item.purchase_date ? new Date(item.purchase_date).toLocaleDateString() : '-'}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <div className="flex items-center space-x-2">
+                                                            {item.purchase_link && (
+                                                                <a
+                                                                    href={item.purchase_link}
+                                                                    target="_blank"
+                                                                    rel="noopener noreferrer"
+                                                                    className="text-blue-600 underline text-sm"
+                                                                >
+                                                                    Réapprovisionner
+                                                                </a>
+                                                            )}
+                                                            {isProUser && (
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    onClick={() => handleDelete(item.id)}
+                                                                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                                                >
+                                                                    <Trash2 className="h-4 w-4" />
+                                                                </Button>
+                                                            )}
+                                                        </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </ProLock>
             </div>
         </DashboardLayout>
     );

@@ -27,6 +27,12 @@ Bienvenue sur **Ratbusiness**, votre tableau de bord tout-en-un pour suivre vos 
   - Top vendeurs (bénéfice > 30€)
   - Ventes flash (vente dans les 7 jours)
   - Articles actifs/archivés
+- Visualisez pour chaque article :
+  - Stock restant
+  - Temps depuis l'achat
+  - Prix conseillé (x3)
+  - Prix minimum (x1.5)
+  - Prix recommandé par l'assistant IA
 
 ---
 
@@ -63,6 +69,10 @@ Visualisez en un coup d'œil :
 - Bénéfice de la semaine
 - Stock restant
 - Articles en stock critique
+- Valeur totale du stock
+- Nombre total d'articles
+- Nombre d'unités vendues
+- Nombre d'unités restantes
 
 ### Score de rentabilité 🔥
 Chaque article affiche un **score sur 100** basé sur :
@@ -81,11 +91,14 @@ Dans l'onglet **Statistiques**, visualisez :
   - 30 derniers jours
   - Mois en cours
   - Année en cours
+  - Période personnalisée
 
 ### Classements
 - Top 5 des produits les plus rentables
 - Articles les plus rapides à vendre
 - Articles en stock critique (< 3 unités)
+- Temps moyen de vente par article
+- Marge moyenne par article
 
 ---
 
@@ -95,12 +108,18 @@ Dans l'onglet **Statistiques**, visualisez :
 Chaque article affiche :
 - **Prix conseillé (x3)** : Marge confortable
 - **Prix minimum (x1.5)** : Seuil de rentabilité
+- **Prix recommandé par l'IA** : Basé sur :
+  - Historique des ventes
+  - Temps depuis l'achat
+  - Performance des ventes similaires
 
 ### Analyses détaillées
 - Marge moyenne par article
 - Vitesse moyenne de vente
 - Bénéfice total par article
 - Historique des prix de vente
+- Temps moyen entre les ventes
+- Rentabilité journalière
 
 ---
 
@@ -109,24 +128,56 @@ Chaque article affiche :
 ### Alerte de stock critique
 - Un article est signalé si le stock passe sous **3 unités**
 - Vue dédiée aux articles en stock faible
+- Notifications automatiques
 
 ### Archives
 - Les articles vendus entièrement sont placés dans **Archivés**
 - Possibilité de les supprimer définitivement
 - Filtrage facile entre articles actifs et archivés
+- Historique complet des ventes conservé
 
 ---
 
-## 6. Fonctionnalités avancées
+## 6. Gestion de la logistique
+
+### Suivi des coûts logistiques
+- Enregistrement des frais de port
+- Suivi des emballages utilisés
+- Calcul automatique des coûts par vente
+- Impact sur la marge bénéficiaire
+
+### Gestion des fournitures
+- Inventaire des emballages
+- Suivi des stocks de fournitures
+- Alertes de réapprovisionnement
+- Coût unitaire par type d'emballage
+
+### Optimisation des frais
+- Calcul des frais de port moyens
+- Recommandations d'optimisation
+- Comparaison des coûts par plateforme
+- Impact sur la rentabilité
+
+### Rapports logistiques
+- Coûts logistiques par période
+- Analyse des tendances
+- Prévisions de besoins
+- Optimisation des marges
+
+---
+
+## 7. Fonctionnalités avancées
 
 ### Export de données
 - Export CSV des ventes et articles (plan Pro et Business)
 - Données complètes pour votre comptabilité
+- Rapports personnalisables
 
 ### Intégrations (plan Business)
 - API d'intégration
 - Webhooks pour automatisation
 - Assistant IA de pricing
+- Synchronisation avec d'autres plateformes
 
 ### Collaboration (plan Business)
 - Support multi-utilisateur
@@ -136,8 +187,43 @@ Chaque article affiche :
 
 ---
 
-## 7. Paramètres
+## 8. Paramètres et personnalisation
 
-- **Déconnexion** via le menu latéral
-- Accès à **Paramètres**
-- Gestion du profil utilisateur
+### Profil utilisateur
+- Gestion des informations personnelles
+- Préférences de notification
+- Paramètres de confidentialité
+
+### Paramètres de l'application
+- Personnalisation de l'interface
+- Configuration des alertes
+- Gestion des intégrations
+- Paramètres de facturation
+
+### Sécurité
+- Authentification à deux facteurs
+- Historique des connexions
+- Gestion des sessions actives
+- Protection des données RGPD
+
+---
+
+## 9. Support et assistance
+
+### Centre d'aide
+- Documentation complète
+- Tutoriels vidéo
+- FAQ détaillée
+- Guides d'utilisation
+
+### Support client
+- Chat en direct
+- Tickets de support
+- Support par email
+- Support téléphonique (plan Business)
+
+### Formation
+- Webinaires mensuels
+- Sessions de formation personnalisées
+- Guides de démarrage rapide
+- Bonnes pratiques

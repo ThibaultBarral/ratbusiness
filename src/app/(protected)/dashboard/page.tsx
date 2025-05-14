@@ -11,6 +11,10 @@ import Link from "next/link";
 import { ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { isSameMonth, isSameYear, subDays, isAfter } from "date-fns";
 import { FomoMessage } from "@/components/ui/fomo-message";
+import { Badge } from "@/components/ui/badge";
+import { Lock } from "lucide-react";
+import { useUserPlan } from "@/contexts/UserPlanContext";
+import { ProLock } from "@/components/ui/pro-lock";
 
 interface LogisticsItem {
     id: string;
@@ -51,6 +55,7 @@ export default function DashboardPage() {
     const [logisticsCost, setLogisticsCost] = useState(0);
     const supabase = createClient();
     const router = useRouter();
+    const { plan } = useUserPlan();
 
     const filterOptions = [
         { value: "7days", label: "7 derniers jours" },
@@ -361,7 +366,7 @@ export default function DashboardPage() {
 
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between">
-                        <CardTitle>Bénéfice total</CardTitle>
+                        <CardTitle>Bénéfice brut</CardTitle>
                         {profitGrowthRate && (
                             <div className={`flex items-center gap-1 text-xs font-medium rounded px-2 py-1 ml-auto w-fit ${parseFloat(profitGrowthRate) >= 0 ? "text-green-600 bg-green-50" : "text-red-600 bg-red-50"}`}>
                                 {parseFloat(profitGrowthRate) >= 0 ? (
@@ -409,58 +414,88 @@ export default function DashboardPage() {
                 {/* Nouvelle carte Bénéfice net */}
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between">
-                        <CardTitle>
+                        <CardTitle className="flex items-center gap-2">
                             Bénéfice net <span className="text-xs opacity-50">(hors log.)</span>
+                            {plan === "starter" && (
+                                <div className="flex items-center gap-1">
+                                    <Badge variant="secondary" className="text-xs">PRO</Badge>
+                                    <Lock className="w-3 h-3 text-muted-foreground" />
+                                </div>
+                            )}
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-2xl font-bold">{(totalProfit - logisticsCost).toFixed(2)} €</p>
+                        {plan === "starter" ? (
+                            <div className="text-sm text-muted-foreground">
+                                Passez au plan Pro pour voir votre bénéfice net
+                            </div>
+                        ) : (
+                            <p className="text-2xl font-bold">{(totalProfit - logisticsCost).toFixed(2)} €</p>
+                        )}
                     </CardContent>
                 </Card>
             </div>
 
             <div className="mt-8">
-                <SalesChart filter={filter} />
+                <ProLock
+                    isPro={plan === "pro"}
+                    title="Débloquez le graphique complet"
+                    description="Visualisez l'évolution de vos ventes et prenez de meilleures décisions"
+                >
+                    <SalesChart filter={filter} />
+                </ProLock>
             </div>
 
             <div className="mt-10 grid gap-6 lg:grid-cols-2">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Top 5 produits les plus rentables</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <ul className="list-disc list-inside text-sm">
-                            {topProfitableArticles.map((article) => (
-                                <li key={article.id}>
-                                    <Link href={`/articles/${article.id}/sales`} className="hover:underline">
-                                        {article.name} — <strong>{article.totalProfit.toFixed(2)} €</strong>
-                                    </Link>
-                                </li>
-                            ))}
-                        </ul>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader>
-                        <CardTitle>🛑 Stock critique (&lt; 3)</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        {criticalStockArticles.length === 0 ? (
-                            <p className="text-sm text-muted-foreground">Aucun article en stock critique.</p>
-                        ) : (
-                            <ul className="list-disc list-inside text-sm text-red-600">
-                                {criticalStockArticles.map((article) => (
+                <ProLock
+                    isPro={plan === "pro"}
+                    title="Top 5 produits les plus rentables"
+                    description="Découvrez vos produits les plus rentables et optimisez votre stratégie"
+                >
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Top 5 produits les plus rentables</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <ul className="list-disc list-inside text-sm">
+                                {topProfitableArticles.map((article) => (
                                     <li key={article.id}>
                                         <Link href={`/articles/${article.id}/sales`} className="hover:underline">
-                                            {article.name} — <strong>{article.remaining}</strong> restant(s)
+                                            {article.name} — <strong>{article.totalProfit.toFixed(2)} €</strong>
                                         </Link>
                                     </li>
                                 ))}
                             </ul>
-                        )}
-                    </CardContent>
-                </Card>
+                        </CardContent>
+                    </Card>
+                </ProLock>
+
+                <ProLock
+                    isPro={plan === "pro"}
+                    title="Stock critique"
+                    description="Surveillez votre stock et évitez les ruptures"
+                >
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>🛑 Stock critique (&lt; 3)</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            {criticalStockArticles.length === 0 ? (
+                                <p className="text-sm text-muted-foreground">Aucun article en stock critique.</p>
+                            ) : (
+                                <ul className="list-disc list-inside text-sm text-red-600">
+                                    {criticalStockArticles.map((article) => (
+                                        <li key={article.id}>
+                                            <Link href={`/articles/${article.id}/sales`} className="hover:underline">
+                                                {article.name} — <strong>{article.remaining}</strong> restant(s)
+                                            </Link>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </CardContent>
+                    </Card>
+                </ProLock>
             </div>
         </DashboardLayout>
     );

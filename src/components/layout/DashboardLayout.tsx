@@ -21,6 +21,7 @@ import {
     DropdownMenuSeparator,
     DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
     const supabase = createClient();
@@ -28,6 +29,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
     const [userDisplayName, setUserDisplayName] = useState("");
     const [userEmail, setUserEmail] = useState("");
+    const [userPlan, setUserPlan] = useState<string | null>(null);
     const pathname = usePathname();
 
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -60,6 +62,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         fetchUser();
     }, []);
 
+    useEffect(() => {
+        const fetchUserPlan = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
+            const { data: subscription } = await supabase
+                .from("subscriptions")
+                .select("plan")
+                .eq("user_id", user.id)
+                .order("created_at", { ascending: false })
+                .limit(1)
+                .maybeSingle();
+
+            setUserPlan(subscription?.plan ?? null);
+        };
+
+        fetchUserPlan();
+    }, []);
+
     return (
         <Layout className="min-h-screen">
             <Button variant="ghost" className="md:hidden" onClick={() => setIsSidebarOpen(!isSidebarOpen)}>
@@ -85,6 +106,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                 height={45}
                                 className="rounded-full"
                             />
+                            <Badge variant="secondary" className="text-xs">
+                                {userPlan ? userPlan.split('_')[0].charAt(0).toUpperCase() + userPlan.split('_')[0].slice(1) : 'Free'}
+                            </Badge>
                         </div>
 
                         <nav className="space-y-2">

@@ -17,8 +17,12 @@ const supabase = createClient(
 );
 
 export async function POST(req: NextRequest) {
+    console.log("🚀 Webhook Stripe reçu");
+
     const body = await req.text();
     const sig = (await headers()).get("stripe-signature");
+
+    console.log("📝 Headers reçus:", Object.fromEntries((await headers()).entries()));
 
     if (!sig) {
         console.error("❌ Aucune signature Stripe trouvée dans les headers");
@@ -35,6 +39,7 @@ export async function POST(req: NextRequest) {
     try {
         event = stripe.webhooks.constructEvent(body, sig, endpointSecret);
         console.log("✅ Signature vérifiée avec succès pour l'événement:", event.type);
+        console.log("📝 Données de l'événement:", JSON.stringify(event.data.object, null, 2));
     } catch (err: unknown) {
         console.error("❌ Erreur de vérification Stripe :", {
             error: err instanceof Error ? err.message : String(err),
@@ -67,20 +72,28 @@ export async function POST(req: NextRequest) {
             const subscription = await stripe.subscriptions.retrieve(subscription_id) as Stripe.Subscription;
             console.log("📝 Subscription récupérée", { subscription });
 
-            const { error } = await supabase.from("subscriptions").insert({
+            console.log("📝 Tentative d'insertion dans Supabase avec les données:", {
+                user_id,
+                stripe_customer_id: session.customer,
+                stripe_subscription_id: subscription_id,
+                plan,
+                status: "active"
+            });
+
+            const { data, error } = await supabase.from("subscriptions").insert({
                 user_id,
                 stripe_customer_id: session.customer as string,
                 stripe_subscription_id: subscription_id,
                 plan,
                 status: "active",
-            });
+            }).select();
 
             if (error) {
                 console.error("❌ Erreur lors de l'insertion dans Supabase :", error);
                 return new NextResponse(`Database Error: ${error.message}`, { status: 500 });
             }
 
-            console.log("✅ Données insérées avec succès dans Supabase");
+            console.log("✅ Données insérées avec succès dans Supabase:", data);
         } catch (err) {
             console.error("❌ Erreur inattendue pendant le traitement de checkout.session.completed :", err);
             return new NextResponse("Internal Server Error", { status: 500 });

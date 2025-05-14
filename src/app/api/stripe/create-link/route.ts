@@ -12,8 +12,15 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
     apiVersion: "2025-04-30.basil",
 });
 
-type PlanType = keyof typeof prices;
-type Period = keyof typeof prices[PlanType];
+// Définition des plans valides
+const VALID_PLANS = [
+    'starter_monthly',
+    'starter_yearly',
+    'pro_monthly',
+    'pro_yearly'
+] as const;
+
+type ValidPlan = typeof VALID_PLANS[number];
 
 export async function POST(req: NextRequest) {
     try {
@@ -24,7 +31,15 @@ export async function POST(req: NextRequest) {
         const { plan } = body;
 
         console.log("📦 Plan reçu:", plan);
-        console.log("📦 Configuration des prix:", prices);
+
+        // Vérification que le plan est valide
+        if (!VALID_PLANS.includes(plan as ValidPlan)) {
+            console.error("❌ Plan invalide:", plan);
+            return NextResponse.json(
+                { error: "Plan invalide. Les plans valides sont: " + VALID_PLANS.join(", ") },
+                { status: 400 }
+            );
+        }
 
         const {
             data: { user },
@@ -38,8 +53,8 @@ export async function POST(req: NextRequest) {
 
         console.log("👤 Utilisateur authentifié:", user.id);
 
-        // Extraire le type de plan et la période du plan (ex: "pro_yearly" -> "pro" et "yearly")
-        const [planType, period] = plan.split('_') as [PlanType, Period];
+        // Extraire le type de plan et la période du plan
+        const [planType, period] = plan.split('_') as [keyof typeof prices, keyof typeof prices[keyof typeof prices]];
 
         console.log("🔍 Plan type:", planType);
         console.log("🔍 Période:", period);

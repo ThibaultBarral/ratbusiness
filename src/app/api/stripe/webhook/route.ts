@@ -115,9 +115,7 @@ export async function POST(req: NextRequest) {
 
         // Trouver l'utilisateur dans Supabase par email
         const { data: userData, error: userError } = await supabase
-            .from("auth.users")
-            .select("id")
-            .eq("email", customer.email)
+            .rpc('get_user_by_email', { user_email: customer.email })
             .single();
 
         if (userError || !userData) {

@@ -123,6 +123,8 @@ export async function POST(req: NextRequest) {
             return new NextResponse("User not found", { status: 400 });
         }
 
+        const userId = (userData as { id: string }).id;
+
         // Trouver le plan correspondant au price_id
         const priceId = subscription.items.data[0]?.price.id;
         const planName = getPriceKeyByStripeId(priceId);
@@ -133,7 +135,7 @@ export async function POST(req: NextRequest) {
         }
 
         console.log("📝 Tentative d'insertion dans Supabase avec les données:", {
-            user_id: userData.id,
+            user_id: userId,
             stripe_customer_id: subscription.customer,
             stripe_subscription_id: subscription.id,
             plan: planName,
@@ -141,7 +143,7 @@ export async function POST(req: NextRequest) {
         });
 
         const { data, error } = await supabase.from("subscriptions").insert({
-            user_id: userData.id,
+            user_id: userId,
             stripe_customer_id: subscription.customer as string,
             stripe_subscription_id: subscription.id,
             plan: planName,

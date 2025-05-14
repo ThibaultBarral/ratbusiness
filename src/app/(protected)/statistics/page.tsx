@@ -36,7 +36,6 @@ export default function StatisticsPage() {
     const supabase = createClient();
     const { plan } = useUserPlan();
     const { handleAction } = usePlanAction();
-    const [isProUser, setIsProUser] = useState(false);
 
     const [overview, setOverview] = useState<{
         revenue: number;
@@ -46,6 +45,12 @@ export default function StatisticsPage() {
         totalSoldUnits: number;
         totalRemainingUnits: number;
         totalArticles: number;
+        averageSaleTime: number;
+        averageLogisticsCostPerSale: number;
+        averageMarginPerArticle: number;
+        stockTurnoverRate: number;
+        currentStockValue: number;
+        averageSalesPerDay: number;
     } | null>(null);
     const [ranking, setRanking] = useState<
         { id: string; name: string; totalProfit: number; salesCount: number }[]
@@ -83,7 +88,7 @@ export default function StatisticsPage() {
 
                 const { data: sales } = await supabase
                     .from("sales")
-                    .select("sale_price, article:article_id(unit_cost, user_id)")
+                    .select("sale_price, sale_date, article:article_id(unit_cost, user_id, purchase_date)")
                     .eq("article.user_id", user.id);
 
                 if (!sales) return;
@@ -100,7 +105,7 @@ export default function StatisticsPage() {
 
                 const { data: articles } = await supabase
                     .from("articles")
-                    .select("id, unit_cost, quantity")
+                    .select("id, unit_cost, quantity, name")
                     .eq("user_id", user.id);
 
                 const { data: allSales } = await supabase
@@ -115,6 +120,9 @@ export default function StatisticsPage() {
                 let revenue = 0;
                 let profit = 0;
                 let investedAmount = 0;
+                let totalMargin = 0;
+                let marginCount = 0;
+                let currentStockValue = 0;
 
                 for (const sale of sales) {
                     const price = sale.sale_price ?? 0;
@@ -122,6 +130,11 @@ export default function StatisticsPage() {
                     const cost = articleData?.unit_cost ?? 0;
                     revenue += price;
                     profit += price - cost;
+
+                    if (cost > 0) {
+                        totalMargin += (price - cost) / cost;
+                        marginCount++;
+                    }
                 }
 
                 let totalSoldUnits = 0;
@@ -132,7 +145,9 @@ export default function StatisticsPage() {
                 for (const article of articles || []) {
                     const soldQty = salesMap[article.id] || 0;
                     const remainingQty = article.quantity - soldQty;
-                    investedAmount += remainingQty * article.unit_cost;
+                    const articleValue = remainingQty * article.unit_cost;
+                    currentStockValue += articleValue;
+                    investedAmount += articleValue;
                     totalSoldUnits += soldQty;
                     totalRemainingUnits += remainingQty;
                     totalArticles += article.quantity;
@@ -140,16 +155,20 @@ export default function StatisticsPage() {
 
                 let totalDaysOnSale = 0;
                 let countedSales = 0;
+                let firstSaleDate: Date | null = null;
+                let lastSaleDate: Date | null = null;
 
-                const { data: salesWithDates } = await supabase
-                    .from("sales")
-                    .select("sale_date, article:article_id(purchase_date)")
-                    .eq("article.user_id", user.id);
+                for (const sale of sales) {
+                    const saleDate = new Date(sale.sale_date);
+                    if (!firstSaleDate || saleDate < firstSaleDate) {
+                        firstSaleDate = saleDate;
+                    }
+                    if (!lastSaleDate || saleDate > lastSaleDate) {
+                        lastSaleDate = saleDate;
+                    }
 
-                for (const sale of salesWithDates || []) {
                     const articleData = sale.article as { purchase_date?: string | null };
                     const purchaseDate = new Date(articleData?.purchase_date ?? "");
-                    const saleDate = new Date(sale.sale_date);
                     if (!isNaN(purchaseDate.getTime()) && !isNaN(saleDate.getTime())) {
                         const daysDiff = Math.floor((saleDate.getTime() - purchaseDate.getTime()) / (1000 * 60 * 60 * 24));
                         totalDaysOnSale += daysDiff;
@@ -158,6 +177,16 @@ export default function StatisticsPage() {
                 }
 
                 const avgSaleTime = countedSales > 0 ? Math.round(totalDaysOnSale / countedSales) : 0;
+                const averageLogisticsCostPerSale = totalSales > 0 ? logisticsCost / totalSales : 0;
+                const averageMarginPerArticle = marginCount > 0 ? (totalMargin / marginCount) * 100 : 0;
+                const stockTurnoverRate = totalArticles > 0 ? (totalSoldUnits / totalArticles) * 100 : 0;
+
+                // Calcul des ventes par jour en moyenne
+                let averageSalesPerDay = 0;
+                if (firstSaleDate && lastSaleDate) {
+                    const daysDiff = Math.max(1, Math.floor((lastSaleDate.getTime() - firstSaleDate.getTime()) / (1000 * 60 * 60 * 24)));
+                    averageSalesPerDay = totalSales / daysDiff;
+                }
 
                 setOverview({
                     revenue,
@@ -167,6 +196,12 @@ export default function StatisticsPage() {
                     totalSoldUnits,
                     totalRemainingUnits,
                     totalArticles,
+                    averageSaleTime: avgSaleTime,
+                    averageLogisticsCostPerSale,
+                    averageMarginPerArticle,
+                    stockTurnoverRate,
+                    currentStockValue,
+                    averageSalesPerDay
                 });
 
                 setAverageSaleTime(avgSaleTime);
@@ -271,7 +306,7 @@ export default function StatisticsPage() {
                             remaining,
                         };
                     })
-                    .filter((item) => item.remaining < 3);
+                    .filter((item) => item.remaining < 3 && item.remaining > 0);
 
                 setLowStockArticles(lowStock);
             });
@@ -279,25 +314,6 @@ export default function StatisticsPage() {
 
         fetchData();
     }, [plan, handleAction]);
-
-    useEffect(() => {
-        const checkPlan = async () => {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (!user) return;
-
-            const { data: subscription } = await supabase
-                .from("subscriptions")
-                .select("plan")
-                .eq("user_id", user.id)
-                .order("created_at", { ascending: false })
-                .limit(1)
-                .maybeSingle();
-
-            setIsProUser(subscription?.plan === "pro");
-        };
-
-        checkPlan();
-    }, []);
 
     const handleDateFilter = async () => {
         if (!plan) return;
@@ -343,7 +359,7 @@ export default function StatisticsPage() {
     return (
         <DashboardLayout>
             <ProLock
-                isPro={isProUser}
+                isPro={plan === "pro"}
                 title="Statistiques Pro"
                 description="Passez au plan Pro pour accéder à toutes vos statistiques détaillées"
             >
@@ -405,9 +421,44 @@ export default function StatisticsPage() {
                                     </Card>
 
                                     <Card className="shadow-sm">
-                                        <CardHeader><CardTitle>Nombre de ventes réalisées</CardTitle></CardHeader>
+                                        <CardHeader><CardTitle>Temps moyen de vente</CardTitle></CardHeader>
                                         <CardContent>
-                                            <p className="text-2xl font-bold">{overview?.totalSales ?? 0}</p>
+                                            <p className="text-2xl font-bold">{overview?.averageSaleTime ?? 0} jours</p>
+                                        </CardContent>
+                                    </Card>
+
+                                    <Card className="shadow-sm">
+                                        <CardHeader><CardTitle>Coût logistique moyen/vente</CardTitle></CardHeader>
+                                        <CardContent>
+                                            <p className="text-2xl font-bold">{overview?.averageLogisticsCostPerSale.toFixed(2) ?? "0.00"} €</p>
+                                        </CardContent>
+                                    </Card>
+
+                                    <Card className="shadow-sm">
+                                        <CardHeader><CardTitle>Marge moyenne par article</CardTitle></CardHeader>
+                                        <CardContent>
+                                            <p className="text-2xl font-bold">{overview?.averageMarginPerArticle.toFixed(1) ?? "0.0"}%</p>
+                                        </CardContent>
+                                    </Card>
+
+                                    <Card className="shadow-sm">
+                                        <CardHeader><CardTitle>Taux de rotation du stock</CardTitle></CardHeader>
+                                        <CardContent>
+                                            <p className="text-2xl font-bold">{overview?.stockTurnoverRate.toFixed(1) ?? "0.0"}%</p>
+                                        </CardContent>
+                                    </Card>
+
+                                    <Card className="shadow-sm">
+                                        <CardHeader><CardTitle>Valeur du stock actuel</CardTitle></CardHeader>
+                                        <CardContent>
+                                            <p className="text-2xl font-bold">{overview?.currentStockValue.toFixed(2) ?? "0.00"} €</p>
+                                        </CardContent>
+                                    </Card>
+
+                                    <Card className="shadow-sm">
+                                        <CardHeader><CardTitle>Ventes par jour (moy.)</CardTitle></CardHeader>
+                                        <CardContent>
+                                            <p className="text-2xl font-bold">{overview?.averageSalesPerDay.toFixed(1) ?? "0.0"}</p>
                                         </CardContent>
                                     </Card>
                                 </div>
@@ -484,7 +535,7 @@ export default function StatisticsPage() {
                                                 return (
                                                     <Card key={sale.id} className="p-4">
                                                         <div className="flex items-start gap-4">
-                                                            <ArticleImage className="w-20 h-20" url={sale.image_url} />
+                                                            <ArticleImage className="w-20 h-20 relative" url={sale.image_url} />
                                                             <div className="flex-1">
                                                                 <h4 className="font-medium mb-2">{sale.name}</h4>
                                                                 <div className="grid grid-cols-2 gap-2 text-sm">

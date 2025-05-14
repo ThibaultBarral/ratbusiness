@@ -225,7 +225,7 @@ export default function DashboardPage() {
                 const salesForArticleAll = sales.filter(sale => sale.article_id === article.id);
                 const soldQtyAll = salesForArticleAll.length;
                 const remainingStock = quantity - soldQtyAll;
-                if (remainingStock < 3) {
+                if (remainingStock < 3 && remainingStock > 0) {
                     criticalStock.push({
                         id: article.id,
                         name: article.name,

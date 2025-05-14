@@ -4,7 +4,11 @@ import Stripe from "stripe";
 import { createClient } from "@/utils/supabase/server";
 import { prices } from "@/lib/stripe/prices";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+if (!process.env.STRIPE_SECRET_KEY) {
+    throw new Error("STRIPE_SECRET_KEY is not defined");
+}
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
     apiVersion: "2025-04-30.basil",
 });
 
@@ -13,6 +17,8 @@ type Period = keyof typeof prices[PlanType];
 
 export async function POST(req: NextRequest) {
     try {
+        console.log("🚀 Début de la création du lien de paiement");
+
         const supabase = await createClient();
         const body = await req.json();
         const { plan } = body;
@@ -25,7 +31,12 @@ export async function POST(req: NextRequest) {
         } = await supabase.auth.getUser();
         const customerEmail = user?.email;
 
-        if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        if (!user) {
+            console.log("❌ Utilisateur non authentifié");
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        console.log("👤 Utilisateur authentifié:", user.id);
 
         // Extraire le type de plan et la période du plan (ex: "pro_yearly" -> "pro" et "yearly")
         const [planType, period] = plan.split('_') as [PlanType, Period];
@@ -44,6 +55,8 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Prix introuvable pour ce plan." }, { status: 400 });
         }
 
+        console.log("🔄 Création de la session Stripe...");
+
         const session = await stripe.checkout.sessions.create({
             mode: "subscription",
             line_items: [{ price: priceId, quantity: 1 }],
@@ -57,11 +70,20 @@ export async function POST(req: NextRequest) {
             cancel_url: `https://ratbusiness.fr/pricing?cancelled=true`,
         });
 
+        console.log("✅ Session Stripe créée avec succès");
+
         return NextResponse.json({ url: session.url });
     } catch (error) {
         console.error("❌ Erreur lors de la création du lien de paiement:", error);
+        if (error instanceof Error) {
+            console.error("Message d'erreur:", error.message);
+            console.error("Stack trace:", error.stack);
+        }
         return NextResponse.json(
-            { error: "Une erreur est survenue lors de la création du lien de paiement." },
+            {
+                error: "Une erreur est survenue lors de la création du lien de paiement.",
+                details: error instanceof Error ? error.message : "Erreur inconnue"
+            },
             { status: 500 }
         );
     }

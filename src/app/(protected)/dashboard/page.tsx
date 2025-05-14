@@ -40,6 +40,13 @@ interface StockAlert {
     remaining: number;
 }
 
+interface Sale {
+    article_id: string;
+    sale_price: number;
+    sale_date: string;
+    ads_cost: number | null;
+}
+
 export default function DashboardPage() {
     const [totalRevenue, setTotalRevenue] = useState(0);
     const [totalProfit, setTotalProfit] = useState(0);
@@ -104,7 +111,7 @@ export default function DashboardPage() {
 
             const { data: sales, error: salesError } = await supabase
                 .from("sales")
-                .select("article_id, sale_price, sale_date");
+                .select("article_id, sale_price, sale_date, ads_cost");
 
             if (articlesError) console.error("[ERROR] Articles fetch:", articlesError);
             if (salesError) console.error("[ERROR] Sales fetch:", salesError);
@@ -112,8 +119,8 @@ export default function DashboardPage() {
 
             // Filtrage selon la période pour les métriques (hors stock)
             const today = new Date();
-            let filteredSales: typeof sales = [];
-            let previousFilteredSales: typeof sales = [];
+            let filteredSales: Sale[] = [];
+            let previousFilteredSales: Sale[] = [];
 
             if (filter === "7days") {
                 filteredSales = sales.filter((sale) => {
@@ -159,7 +166,7 @@ export default function DashboardPage() {
                 if (!article) continue;
                 const unitCost = article.unit_cost ?? 0;
                 if (sale.sale_price !== null && unitCost !== null) {
-                    profitThisWeek += (sale.sale_price - unitCost);
+                    profitThisWeek += (sale.sale_price - unitCost - (sale.ads_cost || 0));
                 }
             }
             setWeeklyProfit(profitThisWeek);
@@ -204,7 +211,7 @@ export default function DashboardPage() {
                 for (const sale of salesForArticle) {
                     if (sale.sale_price !== null && unitCost !== null) {
                         revenue += sale.sale_price;
-                        const margin = sale.sale_price - unitCost;
+                        const margin = sale.sale_price - unitCost - (sale.ads_cost || 0);
                         profit += margin;
                         articleProfit += margin;
                         if (unitCost > 0) {
@@ -278,7 +285,7 @@ export default function DashboardPage() {
                 const article = articles.find((a) => a.id === sale.article_id);
                 if (!article) return acc;
                 const unitCost = article.unit_cost ?? 0;
-                return acc + (sale.sale_price - unitCost);
+                return acc + (sale.sale_price - unitCost - (sale.ads_cost || 0));
             }, 0) || 1;
             const profitGrowth = (((profit - prevProfit) / prevProfit) * 100).toFixed(1);
 

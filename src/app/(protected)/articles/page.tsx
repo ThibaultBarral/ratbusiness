@@ -26,7 +26,7 @@ interface Article {
     quantity: number;
     unit_cost: number;
     platform: string;
-    sales: { id: string; sale_date: string; sale_price: number }[];
+    sales: { id: string; sale_date: string; sale_price: number; ads_cost?: number }[];
     image_url?: string;
     purchase_date?: string;
 }
@@ -115,7 +115,7 @@ function ArticlesTabs({
                                 // Si l'utilisateur est sur le plan starter, on ignore les filtres
                                 if (!isPro) return true;
 
-                                const totalBenefit = article.sales?.reduce((sum, sale) => sum + (sale.sale_price - article.unit_cost), 0) || 0;
+                                const totalBenefit = article.sales?.reduce((sum, sale) => sum + (sale.sale_price - article.unit_cost - (sale.ads_cost || 0)), 0) || 0;
                                 const isTopSeller = totalBenefit > 30;
                                 const isQuickSale = article.purchase_date && article.sales.length > 0
                                     ? article.sales.some((sale) => {
@@ -145,7 +145,7 @@ function ArticlesTabs({
                                             : null;
                                         // Total bénéfice et bénéfice/jour
                                         const totalBenefit = article.sales && article.sales.length > 0
-                                            ? article.sales.reduce((sum, sale) => sum + (sale.sale_price - article.unit_cost), 0)
+                                            ? article.sales.reduce((sum, sale) => sum + (sale.sale_price - article.unit_cost - (sale.ads_cost || 0)), 0)
                                             : 0;
                                         // Ajout des variables isTopSeller et isQuickSale
                                         const isTopSeller = totalBenefit > 30;
@@ -165,7 +165,7 @@ function ArticlesTabs({
                                             : 0;
                                         // Marge moyenne réelle sur les ventes
                                         const averageMargin = article.sales.length > 0
-                                            ? article.sales.reduce((sum, sale) => sum + (sale.sale_price - article.unit_cost), 0) / article.sales.length
+                                            ? article.sales.reduce((sum, sale) => sum + (sale.sale_price - article.unit_cost - (sale.ads_cost || 0)), 0) / article.sales.length
                                             : 0;
                                         // Score de marge (max 100)
                                         const marginScore = article.unit_cost > 0
@@ -363,6 +363,7 @@ export default function ArticlesPage() {
     const [selectedArticleId, setSelectedArticleId] = useState<string | null>(null);
     const [salePrice, setSalePrice] = useState("");
     const [saleDate, setSaleDate] = useState(format(new Date(), "yyyy-MM-dd"));
+    const [adsCost, setAdsCost] = useState("");
     const [stockValueGrowthPercent, setStockValueGrowthPercent] = useState<number | null>(null);
 
     // Récupération des articles (actifs et archivés)
@@ -370,7 +371,7 @@ export default function ArticlesPage() {
         setLoading(true);
         const { data, error } = await supabase
             .from("articles")
-            .select("id, name, brand, quantity, unit_cost, platform, image_url, purchase_date, sales(id, sale_date, sale_price)");
+            .select("id, name, brand, quantity, unit_cost, platform, image_url, purchase_date, sales(id, sale_date, sale_price, ads_cost)");
         if (error) {
             console.error("Erreur récupération articles :", error.message);
             setLoading(false);
@@ -407,6 +408,7 @@ export default function ArticlesPage() {
         setSelectedArticleId(articleId);
         setSalePrice("");
         setSaleDate(format(new Date(), "yyyy-MM-dd"));
+        setAdsCost("");
         setShowDialog(true);
     };
 
@@ -426,15 +428,27 @@ export default function ArticlesPage() {
             .eq("auth_id", user.id)
             .single();
 
-        const { error } = await supabase.from("sales").insert([
-            {
-                article_id: selectedArticleId,
-                sale_price: parseFloat(salePrice),
-                sale_date: saleDate,
-                user_id: user.id, // conserve l'ancien champ pour compatibilité
-                user_mapped_id: mappedUser?.id, // nouvelle référence vers users.id
-            },
-        ]);
+        const saleData: {
+            article_id: string;
+            sale_price: number;
+            sale_date: string;
+            user_id: string;
+            user_mapped_id: string | null;
+            ads_cost?: number;
+        } = {
+            article_id: selectedArticleId,
+            sale_price: parseFloat(salePrice),
+            sale_date: saleDate,
+            user_id: user.id, // conserve l'ancien champ pour compatibilité
+            user_mapped_id: mappedUser?.id, // nouvelle référence vers users.id
+        };
+
+        // Ajouter ads_cost seulement si une valeur est saisie
+        if (adsCost) {
+            saleData.ads_cost = parseFloat(adsCost);
+        }
+
+        const { error } = await supabase.from("sales").insert([saleData]);
 
         if (error) {
             alert("Erreur lors de l'enregistrement : " + error.message);
@@ -520,7 +534,7 @@ export default function ArticlesPage() {
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                         <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="price" className="text-right">
+                            <Label htmlFor="price">
                                 Prix de vente (€)
                             </Label>
                             <Input
@@ -533,7 +547,7 @@ export default function ArticlesPage() {
                             />
                         </div>
                         <div className="grid grid-cols-4 items-center gap-4">
-                            <Label htmlFor="date" className="text-right">
+                            <Label htmlFor="date">
                                 Date
                             </Label>
                             <Input
@@ -542,6 +556,20 @@ export default function ArticlesPage() {
                                 onChange={(e) => setSaleDate(e.target.value)}
                                 type="date"
                                 className="col-span-3"
+                            />
+                        </div>
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label htmlFor="adsCost">
+                                Coût publicitaire (€)
+                            </Label>
+                            <Input
+                                id="adsCost"
+                                value={adsCost}
+                                onChange={(e) => setAdsCost(e.target.value)}
+                                type="number"
+                                step="0.01"
+                                className="col-span-3"
+                                placeholder="Optionnel"
                             />
                         </div>
                     </div>

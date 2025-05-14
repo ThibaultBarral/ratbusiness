@@ -21,6 +21,7 @@ type Sale = {
         unit_cost: number;
         image_url: string;
     }[];
+    ads_cost?: number;
 };
 
 export default function SalesPage() {
@@ -46,7 +47,7 @@ export default function SalesPage() {
         .sort((a, b) => {
             const aCost = a.articles[0]?.unit_cost || 0;
             const bCost = b.articles[0]?.unit_cost || 0;
-            return (b.sale_price - bCost) - (a.sale_price - aCost);
+            return (b.sale_price - bCost - (b.ads_cost || 0)) - (a.sale_price - aCost - (a.ads_cost || 0));
         })
         .slice(0, 10);
 
@@ -68,7 +69,8 @@ export default function SalesPage() {
                         name,
                         unit_cost,
                         image_url
-                    )
+                    ),
+                    ads_cost
                 `)
                 .order("sale_date", { ascending: false });
 
@@ -137,7 +139,7 @@ export default function SalesPage() {
                     {displayedSales.map((sale) => {
                         const article = Array.isArray(sale.articles) ? sale.articles[0] : sale.articles;
                         const purchasePrice = article?.unit_cost || 0;
-                        const benefit = sale.sale_price - purchasePrice;
+                        const benefit = sale.sale_price - purchasePrice - (sale.ads_cost || 0);
                         return (
                             <div
                                 key={sale.id}
@@ -157,6 +159,7 @@ export default function SalesPage() {
                                         </p>
                                         <p className="text-sm">Prix d&apos;achat : {purchasePrice.toFixed(2)} €</p>
                                         <p className="text-sm">Prix de vente : {sale.sale_price.toFixed(2)} €</p>
+                                        {sale.ads_cost && <p className="text-sm">Coût publicitaire : {sale.ads_cost.toFixed(2)} €</p>}
                                         <p className={`text-sm font-medium ${benefit < 0 ? "text-red-600" : "text-green-600"}`}>
                                             Bénéfice : {benefit.toFixed(2)} €
                                         </p>

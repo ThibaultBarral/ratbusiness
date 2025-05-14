@@ -56,7 +56,8 @@ export function SalesChart({ filter }: { filter: string }) {
                         name,
                         unit_cost,
                         user_id
-                    )
+                    ),
+                    ads_cost
                 `);
 
             if (error || !sales) {
@@ -94,7 +95,7 @@ export function SalesChart({ filter }: { filter: string }) {
                 const revenue = sale.sale_price || 0;
                 const article = Array.isArray(sale.articles) ? sale.articles[0] : sale.articles;
                 const unitCost = article?.unit_cost || 0;
-                const profit = revenue - unitCost;
+                const profit = revenue - unitCost - (sale.ads_cost || 0);
 
                 if (!map.has(key)) {
                     map.set(key, { revenue: 0, profit: 0 });

@@ -12,6 +12,7 @@ interface Sale {
     sale_price: number;
     sale_date: string;
     user_id: string;
+    ads_cost?: number;
 }
 
 interface Article {
@@ -44,7 +45,7 @@ export default function ArticleSalesPage() {
 
             const { data: articleData, error: articleError } = await supabase
                 .from("articles")
-                .select("id, name, purchase_price_total, quantity, user_id, sales(id, sale_price, sale_date, article_id, user_id), image_url")
+                .select("id, name, purchase_price_total, quantity, user_id, sales(id, sale_price, sale_date, article_id, user_id, ads_cost), image_url")
                 .eq("id", articleId)
                 .eq("user_id", user.id)
                 .single();
@@ -105,7 +106,7 @@ export default function ArticleSalesPage() {
                         </div>
                         <div className="mb-4 p-3 bg-gray-100 rounded-md">
                             {(() => {
-                                const totalBenefit = article.sales.reduce((acc, sale) => acc + (sale.sale_price - unitCost), 0);
+                                const totalBenefit = article.sales.reduce((acc, sale) => acc + (sale.sale_price - unitCost - (sale.ads_cost || 0)), 0);
                                 const averageMargin = (totalBenefit / (unitCost * article.sales.length)) * 100;
                                 return (
                                     <>
@@ -122,13 +123,14 @@ export default function ArticleSalesPage() {
                                 {article.sales
                                     .sort((a, b) => new Date(b.sale_date).getTime() - new Date(a.sale_date).getTime())
                                     .map((sale) => {
-                                        const benefit = sale.sale_price - unitCost;
+                                        const benefit = sale.sale_price - unitCost - (sale.ads_cost || 0);
                                         const margin = (benefit / unitCost) * 100;
 
                                         return (
                                             <li key={sale.id} className="border p-3 rounded-md space-y-1">
                                                 <p className="text-sm">Prix de vente : {sale.sale_price.toFixed(2)} €</p>
                                                 <p className="text-sm">Prix d&apos;achat : {unitCost.toFixed(2)} €</p>
+                                                {sale.ads_cost && <p className="text-sm">Coût publicitaire : {sale.ads_cost.toFixed(2)} €</p>}
                                                 <p className="text-sm">Bénéfice : {benefit.toFixed(2)} €</p>
                                                 <p className="text-sm">Marge : {margin.toFixed(1)}% (x{(1 + margin / 100).toFixed(2)})</p>
                                                 <p className="text-sm text-muted-foreground">

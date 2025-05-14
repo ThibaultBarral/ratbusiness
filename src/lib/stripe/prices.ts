@@ -1,10 +1,10 @@
 export const prices = {
     starter: {
-        monthly: "price_1ROK9t4IePLjIa8G9itVNpbc",
-        yearly: "price_1ROM9f4IePLjIa8G3cQVa4rY",
+        monthly: "price_1ROfgMKLTx0mKa67L0W3BAq8",
+        yearly: "price_1ROfgMKLTx0mKa67EyApCJsB",
     },
     pro: {
-        monthly: "price_1ROLZD4IePLjIa8GtI0bYgHO",
-        yearly: "price_1ROMAz4IePLjIa8GHxNfGWq5",
+        monthly: "price_1ROfgxKLTx0mKa67WFGAXuoW",
+        yearly: "price_1ROfgxKLTx0mKa67J0ZQiGs8",
     },
 };

@@ -26,6 +26,7 @@ export async function POST(req: NextRequest) {
     const priceId = priceLookup.data?.[0]?.id;
 
     if (!priceId) {
+        console.error("❌ Aucun price_id trouvé pour le plan :", plan);
         return NextResponse.json({ error: "Prix introuvable pour ce plan." }, { status: 400 });
     }
 

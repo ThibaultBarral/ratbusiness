@@ -10,7 +10,7 @@ import {
     LayoutSidebar,
 } from "@/components/ui/layout";
 import { Button } from "@/components/ui/button";
-import { Home, Package, ShoppingCart, BarChart2, LogOut, Settings, Book, Menu, Bell, CreditCard, ChevronUp, Gift, Share2, Truck } from "lucide-react";
+import { Home, Package, ShoppingCart, BarChart2, LogOut, Settings, Book, Menu, Bell, CreditCard, ChevronUp, Share2, Truck } from "lucide-react";
 import { useEffect, useState } from "react";
 import { createClient } from "../../../utils/supabase/client";
 import {
@@ -180,14 +180,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                         <CreditCard className="w-4 h-4 mr-2" /> Tarifs
                                     </Button>
                                 </Link>
-                                <Link href="/free-month">
+                                {/* <Link href="/free-month">
                                     <Button
                                         variant="ghost"
                                         className="w-full justify-start text-sm font-medium hover:bg-accent hover:text-accent-foreground transition"
                                     >
                                         <Gift className="w-4 h-4 mr-2" /> Obtenir 1 mois offert
                                     </Button>
-                                </Link>
+                                </Link> */}
                                 <Link href="/affiliate">
                                     <Button
                                         variant="ghost"

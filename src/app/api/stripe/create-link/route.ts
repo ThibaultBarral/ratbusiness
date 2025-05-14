@@ -2,10 +2,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { createClient } from "@/utils/supabase/server";
+import { prices } from "@/lib/stripe/prices";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
     apiVersion: "2025-04-30.basil",
 });
+
+type PlanType = keyof typeof prices;
+type Period = keyof typeof prices[PlanType];
 
 export async function POST(req: NextRequest) {
     const supabase = await createClient();
@@ -19,11 +23,11 @@ export async function POST(req: NextRequest) {
 
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    // Recherche du price_id via lookup_key
-    const priceLookup = await stripe.prices.list({ lookup_keys: [plan], expand: ["data.product"] });
-    console.log("🔍 Lookup demandé :", plan);
-    console.log("🔎 Résultat trouvé :", priceLookup.data);
-    const priceId = priceLookup.data?.[0]?.id;
+    // Extraire le type de plan et la période du plan (ex: "pro_yearly" -> "pro" et "yearly")
+    const [planType, period] = plan.split('_') as [PlanType, Period];
+
+    // Récupérer le price_id depuis notre configuration
+    const priceId = prices[planType]?.[period];
 
     if (!priceId) {
         console.error("❌ Aucun price_id trouvé pour le plan :", plan);

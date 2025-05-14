@@ -135,7 +135,7 @@ export default function BillingPage() {
                             )}
                             <div className="relative">
                                 <span className="font-bold text-5xl">
-                                    {isAnnual ? "9€" : "11€"}
+                                    {isAnnual ? "5,6€" : "7€"}
                                 </span>
                                 <p className="text-sm text-muted-foreground mt-2">
                                     /mois {isAnnual ? "(facturation annuelle)" : "(facturation mensuelle)"}
@@ -181,7 +181,7 @@ export default function BillingPage() {
                             )}
                             <div className="relative">
                                 <span className="font-bold text-5xl">
-                                    {isAnnual ? "19€" : "24€"}
+                                    {isAnnual ? "11,2€" : "14€"}
                                 </span>
                                 <p className="text-sm text-muted-foreground mt-2">
                                     /mois {isAnnual ? "(facturation annuelle)" : "(facturation mensuelle)"}

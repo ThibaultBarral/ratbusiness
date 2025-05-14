@@ -130,7 +130,7 @@ export default function ArticleSalesPage() {
                                             <li key={sale.id} className="border p-3 rounded-md space-y-1">
                                                 <p className="text-sm">Prix de vente : {sale.sale_price.toFixed(2)} €</p>
                                                 <p className="text-sm">Prix d&apos;achat : {unitCost.toFixed(2)} €</p>
-                                                {sale.ads_cost && <p className="text-sm">Coût publicitaire : {sale.ads_cost.toFixed(2)} €</p>}
+                                                {sale.ads_cost != null && <p className="text-sm">Coût publicitaire : {sale.ads_cost.toFixed(2)} €</p>}
                                                 <p className="text-sm">Bénéfice : {benefit.toFixed(2)} €</p>
                                                 <p className="text-sm">Marge : {margin.toFixed(1)}% (x{(1 + margin / 100).toFixed(2)})</p>
                                                 <p className="text-sm text-muted-foreground">

@@ -66,7 +66,7 @@ export default function AffiliatePage() {
                     </CardHeader>
                     <CardContent>
                         <p className="text-muted-foreground">
-                            Tu recommandes Ratbusiness à 5 personnes. Elles s&apos;abonnent à 9€/mois. <br />
+                            Tu recommandes Ratbusiness à 5 personnes. Elles s&apos;abonnent à 5,6€/mois. <br />
                             👉 Tu gagnes 22,50€/mois, chaque mois, tant qu&apos;elles restent abonnées.
                         </p>
                     </CardContent>

@@ -52,7 +52,7 @@ export default function LogisticsPage() {
                 .limit(1)
                 .maybeSingle();
 
-            setIsProUser(subscription?.plan === "pro");
+            setIsProUser(subscription?.plan === "pro" || subscription?.plan === "pro_yearly" || subscription?.plan === "pro_monthly");
         };
 
         checkPlan();

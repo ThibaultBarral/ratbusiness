@@ -420,7 +420,7 @@ export default function DashboardPage() {
 
                 {/* Nouvelle carte Bénéfice net */}
                 <Card>
-                    <CardHeader className="flex flex-row items-center justify-between">
+                    <CardHeader className="flex flex-row items-center justify-between h-6">
                         <CardTitle className="flex items-center gap-2">
                             Bénéfice net <span className="text-xs opacity-50">(hors log.)</span>
                             {plan === "starter" && (

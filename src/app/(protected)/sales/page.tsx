@@ -159,7 +159,7 @@ export default function SalesPage() {
                                         </p>
                                         <p className="text-sm">Prix d&apos;achat : {purchasePrice.toFixed(2)} €</p>
                                         <p className="text-sm">Prix de vente : {sale.sale_price.toFixed(2)} €</p>
-                                        {sale.ads_cost && <p className="text-sm">Coût publicitaire : {sale.ads_cost.toFixed(2)} €</p>}
+                                        {sale.ads_cost != null && <p className="text-sm">Coût publicitaire : {sale.ads_cost.toFixed(2)} €</p>}
                                         <p className={`text-sm font-medium ${benefit < 0 ? "text-red-600" : "text-green-600"}`}>
                                             Bénéfice : {benefit.toFixed(2)} €
                                         </p>
